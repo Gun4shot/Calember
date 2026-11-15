@@ -16,7 +16,7 @@ export const cam = {
   mode: "globe" as "globe" | "stage",
   lat: 18,
   lon: 70,
-  dist: innerWidth < 640 ? R * 3.7 : R * 3.35, // opening view: a little closer on wide screens (phones keep the whole planet in frame)
+  dist: innerWidth < 640 ? R * 4.1 : R * 3.85, // opening view: the whole planet with a margin of space around it
   vLat: 0,
   vLon: 0,
   lastInteract: 0,

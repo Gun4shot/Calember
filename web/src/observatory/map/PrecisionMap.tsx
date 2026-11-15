@@ -230,7 +230,7 @@ export default function PrecisionMap() {
         const next = st.afterMap;
         set({ mapMode: "off", afterMap: null });
         if (next) void st.acquire(next);
-        else flyTo(cam.lat, cam.lon, R * 3.4, 1.6);
+        else flyTo(cam.lat, cam.lon, innerWidth < 640 ? R * 4.1 : R * 3.85, 1.6);
       }, reduced ? 0 : 750);
     };
     if (!map || reduced) return finish();

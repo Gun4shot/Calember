@@ -10,12 +10,12 @@ let wet: GainNode | null = null;
 let pad: { stop: () => void } | null = null;
 let enabled = false;
 
-/** The viewer's sound choice, shared with the story (it sets it on "Begin the story"). */
+/** The viewer's sound choice, shared with the story. Sound is on by default; only an explicit "off" turns it off. */
 export function soundPref(): boolean {
   try {
-    return localStorage.getItem("calember.sound") === "1";
+    return localStorage.getItem("calember.sound") !== "0";
   } catch {
-    return false;
+    return true;
   }
 }
 export function saveSoundPref(on: boolean) {

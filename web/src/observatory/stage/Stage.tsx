@@ -34,7 +34,7 @@ function StageExit() {
   useEffect(() => {
     if (cam.mode === "stage") {
       setMode("globe", camera, 1.2);
-      flyTo(cam.lat, cam.lon, R * 3.2, 1.6);
+      flyTo(cam.lat, cam.lon, innerWidth < 640 ? R * 4.1 : R * 3.85, 1.6);
     }
   }, [camera]);
   return null;
