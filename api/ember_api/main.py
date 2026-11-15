@@ -217,7 +217,7 @@ Files:
   metadata.json request, area, data version, model
 
 Validation: held-out regions and years (KGE 0.991 at province/country/biome scale on 2018-2019; sealed 2020 test 0.968,
-0.989 when the 2020 Aqua data outage is excluded). Full report: /api/validation.
+0.989 when the 2020 Aqua data outage is excluded). Full report: static/validation_report.json on the website.
 
 Credits: NASA FIRMS (MODIS C6.1 MCD14ML, VIIRS 375 m VNP14IMGML / VJ114IMGML / VJ214IMGML), Natural Earth (boundaries),
 RESOLVE Ecoregions 2017 (CC-BY 4.0). We acknowledge the use of data and imagery from LANCE FIRMS operated by NASA's
@@ -373,7 +373,7 @@ def daily(area_id: str, month: str, baseline: str = "2003-2025"):
         raise AreaError("invalid_geometry", "month must look like 2026-10 and baseline like 2003-2025.") from e
     n = _cal.monthrange(y, mm)[1]
     d = s.area_daily(a.get("_cells_int") or [], a.get("_unit"), f"{min(b0, y)}-01-01", f"{max(b1, y)}-12-31")
-    data_end = str(d["date"].max()) if d.height else "0000-00-00"
+    data_end = LAST_DAY.isoformat()  # the record is complete through this day everywhere (days without fire are 0)
     d = d.with_columns(pl.col("date").dt.year().alias("y"), pl.col("date").dt.month().alias("m"), pl.col("date").dt.day().alias("d")).filter(pl.col("m") == mm)
     cur = {int(r["d"]): float(r["h"]) for r in d.filter(pl.col("y") == y).iter_rows(named=True)}
     years = [yy for yy in range(b0, b1 + 1) if yy != y]
@@ -724,6 +724,39 @@ def now(area_id: str):
             "stored_through": str(last_stored), "live_meh_after_stored": round(live_after, 3), "nrt_factor": round(fac, 4), "summary": summary}
     _now_cache[area_id] = (_t.time(), body)
     return body
+
+
+@app.get("/api/firms")
+def firms_passthrough(bbox: str):
+    """Local twin of the Cloudflare Pages Function web/functions/api/firms.ts (static deployment): live NOAA-20/21 NRT
+    detections for a bounding box, the last 7 days, as FIRMS CSV with a "#source=" line before each part."""
+    import datetime as dt
+
+    import httpx
+
+    from .live import FIRMS, map_key
+    try:
+        w, so, e, n = (float(x) for x in bbox.split(","))
+    except ValueError:
+        return err("invalid_geometry", "bbox=west,south,east,north required", 400)
+    key = map_key(get_store().repo)
+    if not key:
+        return err("upstream_unavailable", "FIRMS_MAP_KEY is not configured.", 503)
+    w, so, e, n = (f"{v:.2f}" for v in (max(-180, w - 0.1), max(-90, so - 0.1), min(180, e + 0.1), min(90, n + 0.1)))
+    today = dt.datetime.now(dt.timezone.utc).date()
+    parts = []
+    with httpx.Client(timeout=25) as c:
+        for src in ("VIIRS_NOAA20_NRT", "VIIRS_NOAA21_NRT"):
+            for start, span in ((today - dt.timedelta(days=6), 5), (today - dt.timedelta(days=1), 2)):
+                try:
+                    t = c.get(f"{FIRMS}/{key}/{src}/{w},{so},{e},{n}/{span}/{start.isoformat()}").text.lstrip()
+                except httpx.HTTPError:
+                    continue
+                if t.startswith("latitude"):
+                    parts.append(f"#source={src}\n{t}")
+    if not parts:
+        return err("upstream_unavailable", "FIRMS did not answer.", 502)
+    return Response("\n".join(parts), media_type="text/csv")
 
 
 # ---------------- global ----------------

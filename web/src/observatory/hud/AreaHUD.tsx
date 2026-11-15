@@ -1,7 +1,10 @@
 // The Area Dossier's DOM layer: header, the always-on answer strip, the chapter rail and one panel per station.
 // Every station answers in words and numbers first; every 3D view has a flat/table equivalent.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api } from "../../app/api";
+import { ApiFailure, api, exportFile, type ExportKind } from "../../app/api";
+import { STATIC_MODE } from "../../app/snapshot";
+import { isDrawnId } from "../../app/engine/region";
+import { uiZoom } from "../../uiZoom";
 import { CATEGORY_LABEL, MONTHS_LONG, MONTHS_SHORT, REGIME_LABEL, fmt, monthLabel } from "../../app/format";
 import type { Calendar, CalendarMonth } from "../../app/types";
 import { MONTH_HUES } from "../stage/Terrain";
@@ -170,7 +173,7 @@ function AreaHeader() {
   const [copied, setCopied] = useState(false);
   // only named places (province, country, biome, world) can be watched: drawn shapes are not kept by the API
   const linkId = decodeURIComponent(window.location.hash.replace(/^#\/?/, "").split("?")[0]).split("/")[1] ?? "";
-  const watchId = linkId && !linkId.startsWith("a_") ? linkId : null;
+  const watchId = linkId && !linkId.startsWith("a_") && !isDrawnId(linkId) ? linkId : null;
   const watching = !!watchId && watched.some((w) => w.id === watchId);
   return (
     <header className="area-head2 glass">
@@ -362,7 +365,8 @@ function VerdictPanel({ cal }: { cal: Calendar }) {
       <DailyStrip areaId={useObs.getState().area!.area_id} month={sel.month} />
       <ReadLineup cal={cal} sel={sel} mName={mName} />
       <p className="st-note">
-        {sel.provisional ? "This month is provisional (near-real-time data). " : ""}90 % range: {fmtS(sel.lo90)}–{fmtS(sel.hi90)}. Source: {regimeWords(sel.regime)}.
+        {sel.provisional ? "This month is provisional (near-real-time data). " : ""}
+        {sel.hi90 > sel.lo90 ? `90 % range: ${fmtS(sel.lo90)}–${fmtS(sel.hi90)}. ` : ""}Source: {regimeWords(sel.regime)}.
       </p>
       <LateBurning cal={cal} />
       <OffSeason cal={cal} sel={sel} />
@@ -651,7 +655,12 @@ function CalendarPanel({ cal }: { cal: Calendar }) {
           <button type="button" role="radio" aria-checked={valueMode === "harmonized"} onClick={() => set({ valueMode: "harmonized" })}>
             Harmonized
           </button>
-          <button type="button" role="radio" aria-checked={valueMode === "raw"} onClick={() => set({ valueMode: "raw" })}>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={valueMode === "raw"}
+            onClick={() => set({ valueMode: "raw" })}
+          >
             Raw sensors <kbd>R</kbd>
           </button>
         </div>
@@ -711,8 +720,9 @@ function CalTooltip() {
   const m: CalendarMonth | undefined = gridOf(cal).byMonth.get(hm)?.m;
   if (!m) return null;
   const tot = rawTotal(m) || 1;
-  const left = Math.min(window.innerWidth - 300, pos.x + 18);
-  const top = Math.min(window.innerHeight - 260, pos.y + 14);
+  const z = uiZoom();
+  const left = Math.min(window.innerWidth / z - 300, pos.x / z + 18);
+  const top = Math.min(window.innerHeight / z - 260, pos.y / z + 14);
   return (
     <div className="caltip glass" style={{ left, top }} role="tooltip">
       <b>{monthLabel(m.month)}</b>
@@ -971,6 +981,63 @@ function TwinsPanel() {
   );
 }
 
+// ---------------- downloads made in the browser (static deployment) ----------------
+const DL: [ExportKind, string, string][] = [
+  ["calendar.csv", "calendar.csv", "every month: value, 90 % range, vs normal, sensors"],
+  ["season.csv", "season.csv", "onset, peak, end per fire year"],
+  ["hotspots.csv", "hotspots.csv", "every detection with its MODIS-equivalent weight"],
+  ["bundle.zip", "bundle.zip", "all CSVs + README + metadata"],
+  ["calendar.stl", "calendar.stl", "3D-print this calendar (shown on the stage)"],
+];
+function StaticDownloads({ id, hasCells, qs }: { id: string; hasCells: boolean; qs: { start: string; end: string } }) {
+  const [busy, setBusy] = useState<ExportKind | null>(null);
+  const [prog, setProg] = useState<[number, number] | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const run = async (kind: ExportKind) => {
+    if (busy) return;
+    setBusy(kind);
+    setMsg(null);
+    setProg(null);
+    try {
+      await exportFile(id, kind, { ...qs, onProgress: (d, t) => setProg([d, t]) });
+    } catch (e) {
+      setMsg(e instanceof ApiFailure ? e.message : "The download could not be made. Please try again.");
+    } finally {
+      setBusy(null);
+      setProg(null);
+    }
+  };
+  const needsCells = (k: ExportKind) => k === "hotspots.csv" || k === "bundle.zip";
+  return (
+    <>
+      <div className="dl-grid">
+        {DL.map(([k, label, sub]) => {
+          const off = needsCells(k) && !hasCells;
+          return (
+            <button key={k} type="button" className={`dl ${k === "calendar.stl" ? "hot" : ""} ${off ? "off" : ""}`} aria-disabled={off} aria-busy={busy === k} disabled={off || (busy !== null && busy !== k)} onClick={() => void run(k)}>
+              <b>{label}</b>
+              <span>
+                {off
+                  ? "too large: pick a province or draw a smaller area"
+                  : busy === k
+                    ? prog && prog[1] > 1
+                      ? `fetching detections… ${Math.round((100 * prog[0]) / prog[1])} %`
+                      : "preparing…"
+                    : sub}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {msg && (
+        <p className="fine" role="alert">
+          {msg}
+        </p>
+      )}
+    </>
+  );
+}
+
 // ---------------- 7 · Take it with you ----------------
 function TakePanel() {
   const area = useObs((s) => s.area)!;
@@ -995,6 +1062,10 @@ function TakePanel() {
   return (
     <>
       <Head k="7 · Take it with you" q="Data, print, share" verdict="Everything on this stage, as files you can open, cite and print. The stage shows the 3D-printable calendar." />
+      {STATIC_MODE ? (
+        <StaticDownloads id={id} hasCells={hasCells} qs={{ start, end }} />
+      ) : (
+      <>
       <div className="dl-grid">
         <a className="dl" href={api.exportUrl(id, "calendar.csv")} download>
           <b>calendar.csv</b>
@@ -1017,6 +1088,8 @@ function TakePanel() {
           <span>3D-print this calendar (shown on the stage)</span>
         </a>
       </div>
+      </>
+      )}
       {hasCells && (
         <>
           <div className="seg2 tiny date-presets" role="radiogroup" aria-label="Date range for hotspots.csv and the bundle">

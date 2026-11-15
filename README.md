@@ -16,6 +16,8 @@ Calember translates every VIIRS detection month into **hotspots (MODIS-equivalen
 | 2012 sensor jump | 400 % raw → **4.0 %** harmonized |
 | Sensor Turing test (can a classifier tell real MODIS from ours? 50 % = coin flip) | **55 %** (raw VIIRS: 77 %) |
 
+**Live site: https://calember.pages.dev** · the story at `/`, the Observatory at `/app`, the classic view at `/classic`.
+
 ---
 
 ## The website
@@ -165,6 +167,21 @@ Production build (a static site; set `VITE_API_BASE` when the API runs on anothe
 pnpm --dir web build
 ```
 
+## How the live site is hosted
+
+The public site runs with **no server to keep alive**. It is a static site on Cloudflare Pages: nothing can sleep or run out of memory, and it costs nothing.
+
+- **Named places** (the world, 15 biomes, countries, about 3,900 provinces) answer from files precomputed with the API's own code (`pipeline/build_snapshot.py` → `web/snap/p|c|d|r`).
+- **Drawn areas** (lasso, circle, coordinates, a twin's region) are computed in the visitor's browser by `web/src/app/engine/`, a line-by-line port of the API, from per-region tiles of the full record (`pipeline/build_region_tiles.py`, `build_engine_static.py`). A parity test against the Python API matched every field apart from float32 summation noise (±0.01 on a few terrain cells).
+- **`hotspots.csv` and `bundle.zip`** are built in the browser from every cleaned detection, published as the public dataset [Sidant/calember-hotspots](https://huggingface.co/datasets/Sidant/calember-hotspots) (`pipeline/build_hotspot_parts.py`). The rows, `det_id` and `meh_weight` are identical to the API's.
+- **Two small Pages Functions** (`web/functions/`): `/api/firms` relays live NASA FIRMS near-real-time detections (the FIRMS key stays a server-side secret), and `/api/turing/*` keeps the Sensor Turing test's crowd score in Cloudflare D1.
+
+To redeploy after rebuilding the data (needs `wrangler login`):
+
+```bash
+bash web/scripts/deploy.sh
+```
+
 ## Rebuild the record
 
 From the repository root, in order (each script's docstring gives its usage; run heavy steps one at a time on a 16 GB laptop):
@@ -173,6 +190,7 @@ From the repository root, in order (each script's docstring gives its usage; run
 2. `h3_lookup.py`, `agg2.py`, `static_mask.py`, `agg3.py`, `agg_api.py`
 3. `fill_prep.py` → `build_features.py` → `train_predict.py` → `assemble.py` → `qa_product.py`
 4. Site layers: `pipeline/build_static.py`, `science_exports.py`, `build_aggregates.py`, `build_daily.py`, `build_twins.py`, then the story files (`build_story_*.py`)
+5. Static deployment data: `pipeline/build_snapshot.py`, `build_region_tiles.py`, `build_engine_static.py`, `build_hotspot_parts.py` (then upload `data/hotspots` to the dataset)
 
 Validation: `harmonization/validation/bench9.py` (B2/B3 benchmarks), `crossfit2.py` + `seam2.py`, `c2st_nb.py`, `conformal.py`, `scorecard_oof.py`, `sim_fill.py`.
 

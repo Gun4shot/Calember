@@ -1,0 +1,9 @@
+# Cloudflare Pages project for the static Calember site (deployed with scripts/deploy.sh)
+name = "calember"
+pages_build_output_dir = ".deploy"
+compatibility_date = "2026-11-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "calember-turing"
+database_id = "313db042-71cf-4121-ad20-e5a576927755"

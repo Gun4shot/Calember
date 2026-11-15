@@ -8,6 +8,15 @@
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#05070d" />
     <title>Calember Observatory</title>
+    <style>
+      /* the interface at 90 % on desktop screens; the 3D canvas and the maps stay at full scale (src/uiZoom.ts) */
+      :root { --unzoom: 1; }
+      @media (min-width: 1100px) and (min-height: 600px) and (pointer: fine) {
+        html { zoom: 0.9; }
+        :root { --unzoom: 1.1111111; }
+      }
+      .world, .pmap, .map { zoom: var(--unzoom); }
+    </style>
   </head>
   <body>
     <div id="root"></div>

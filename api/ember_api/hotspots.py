@@ -13,6 +13,7 @@ import io
 from datetime import date
 from typing import Iterator
 
+import numpy as np
 import polars as pl
 
 from .store import Store
@@ -28,7 +29,8 @@ def _sources(store: Store, start: date, end: date, sensors: set[str]) -> list[tu
     raw = store.repo / store.cfg["paths"]["interim"] / "firms_raw"
     api = store.repo / store.cfg["paths"]["interim"] / "firms_api"
     out = []
-    for y in range(start.year, end.year + 1):
+    years = range(start.year, end.year + 1)
+    for y in years:  # yearly archive files: MODIS, S-NPP, NOAA-20
         if y <= 2025:
             if "MODIS" in sensors:
                 out.append(((raw / f"product=modis/year={y}").as_posix() + "/*.parquet", "MODIS", "SP", ""))
@@ -36,18 +38,18 @@ def _sources(store: Store, start: date, end: date, sensors: set[str]) -> list[tu
                 for prod, sat in (("viirs-snpp", "SNPP"), ("viirs-jpss1", "NOAA20")):
                     if (raw / f"product={prod}/year={y}").exists():
                         out.append(((raw / f"product={prod}/year={y}").as_posix() + "/*.parquet", "VIIRS", "SP", sat))
-        if y >= 2023 and "VIIRS" in sensors:
-            for k in ("SP", "NRT"):
-                f = api / f"VIIRS_NOAA21_{k}.parquet"
-                if f.exists():
-                    out.append((f.as_posix(), "VIIRS", k, "NOAA21"))
-        if y == 2026:
-            for stem, inst, sat in (("MODIS", "MODIS", ""), ("VIIRS_SNPP", "VIIRS", "SNPP"), ("VIIRS_NOAA20", "VIIRS", "NOAA20")):
-                if inst in sensors:
-                    for k in ("SP", "NRT"):
-                        f = api / f"{stem}_{k}.parquet"
-                        if f.exists():
-                            out.append((f.as_posix(), inst, k, sat))
+    if end.year >= 2023 and "VIIRS" in sensors:  # NOAA-21 (one file for all years; listed once)
+        for k in ("SP", "NRT"):
+            f = api / f"VIIRS_NOAA21_{k}.parquet"
+            if f.exists():
+                out.append((f.as_posix(), "VIIRS", k, "NOAA21"))
+    if end.year >= 2026:
+        for stem, inst, sat in (("MODIS", "MODIS", ""), ("VIIRS_SNPP", "VIIRS", "SNPP"), ("VIIRS_NOAA20", "VIIRS", "NOAA20")):
+            if inst in sensors:
+                for k in ("SP", "NRT"):
+                    f = api / f"{stem}_{k}.parquet"
+                    if f.exists():
+                        out.append((f.as_posix(), inst, k, sat))
     return out
 
 
@@ -55,7 +57,7 @@ def stream_hotspots(store: Store, area: dict, start: date, end: date, sensors: s
     """Yields CSV text chunks. `factors`: r5, month, regime, factor, provisional (from the product rows of the area)."""
     cells = area["_cells_int"]
     w, s, e, n = area["bbox"]
-    pad = 0.15
+    pad = 0.6  # bbox prefilter only (cell centres); the r5 membership test below is exact
     buf = io.StringIO(); wr = csv.writer(buf, lineterminator="\n")
     wr.writerow(COLS); yield buf.getvalue(); buf.seek(0); buf.truncate()
     fac = {(r, m): (reg, f, p) for r, m, reg, f, p in factors.select("r5", "month", "regime", "factor", "provisional").iter_rows()}
@@ -95,9 +97,14 @@ def stream_hotspots(store: Store, area: dict, start: date, end: date, sensors: s
             lsh = (hh + mm / 60 + r["lon"] / 15.0) % 24
             det_id = int.from_bytes(hashlib.blake2b(f"{sat}|{r['acq_date']}|{r['t']}|{r['lat']:.5f}|{r['lon']:.5f}".encode(), digest_size=8).digest(), "big")
             wr.writerow([det_id, f"{r['acq_date']}T{hh:02d}:{mm:02d}:00Z", r["acq_date"], round(lsh, 2), round(r["lat"], 5), round(r["lon"], 5),
-                         inst, sat, src, r["daynight"], r["confidence"], r["frp"], r["bt_mir"], r["bt_tir"], r["scan"], r["track"],
+                         inst, sat, src, r["daynight"], r["confidence"], _f32(r["frp"]), _f32(r["bt_mir"]), _f32(r["bt_tir"]), _f32(r["scan"]), _f32(r["track"]),
                          format(int(r["r5"]), "x"), reg or "", round(wgt, 4), str(bool(prov)).lower()])
         yield buf.getvalue(); buf.seek(0); buf.truncate()
+
+
+def _f32(v) -> str:
+    """A float32 field as its shortest decimal (12.3, not 12.300000190734863)."""
+    return "" if v is None else str(np.float32(v))
 
 
 def _basis(store: Store, regime: str | None, month: str) -> set[str]:

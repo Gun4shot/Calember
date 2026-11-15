@@ -2,6 +2,7 @@ import { scaleSequentialLog } from "d3";
 import { useMemo, useRef, useState } from "react";
 import { CATEGORY_COLOR, CATEGORY_LABEL, CATEGORY_ORDER, MONTHS_SHORT, REGIME_LABEL, fmt, monthLabel } from "../format";
 import type { Calendar as Cal, CalendarMonth } from "../types";
+import { uiZoom } from "../../uiZoom";
 
 const CW = 30, CH = 17, GAP = 2, LEFT = 50, TOP = 20, BARW = 96;
 
@@ -155,7 +156,7 @@ export function Calendar({ cal, colorMode, valueMode }: { cal: Cal; colorMode: "
       {cur && curMonth && (
         <div
           className={`cal-tip ${hover ? "" : "cal-tip-docked"}`}
-          style={hover ? { left: Math.min(hover.x + 14, window.innerWidth - 300), top: hover.yy + 14 } : undefined}
+          style={hover ? { left: Math.min(hover.x / uiZoom() + 14, window.innerWidth / uiZoom() - 300), top: hover.yy / uiZoom() + 14 } : undefined}
           role="status"
           aria-live="polite"
         >

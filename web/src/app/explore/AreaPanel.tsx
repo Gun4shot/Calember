@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { api } from "../api";
+import { ApiFailure, api, exportFile, type ExportKind } from "../api";
+import { STATIC_MODE } from "../snapshot";
 import { CATEGORY_COLOR, CATEGORY_LABEL, MONTHS_LONG, REGIME_LABEL, fmt, monthLabel } from "../format";
 import { useApp } from "../store";
 import { ErrorBoundary } from "../ErrorBoundary";
@@ -199,24 +200,24 @@ export function AreaPanel() {
             <button type="button" className="btn btn-ghost" onClick={() => window.print()}>
               Print area brief
             </button>
-            <a className="btn btn-ghost" href={api.exportUrl(area.area_id, "calendar.stl")} download>
+            <Dl className="btn btn-ghost" id={area.area_id} kind="calendar.stl">
               3D-print the calendar (STL)
-            </a>
+            </Dl>
           </div>
           <p className="fine">Listen: each month is a note, higher = more fire, silence = none; a soft tick marks each new year.</p>
           <div className="exports">
-            <a className="btn" href={api.exportUrl(area.area_id, "calendar.csv")} download>
+            <Dl className="btn" id={area.area_id} kind="calendar.csv">
               Calendar CSV
-            </a>
-            <a className="btn" href={api.exportUrl(area.area_id, "hotspots.csv", qs)} download>
+            </Dl>
+            <Dl className="btn" id={area.area_id} kind="hotspots.csv" qs={qs}>
               Hotspots CSV (last 12 months)
-            </a>
-            <a className="btn" href={api.exportUrl(area.area_id, "season.csv")} download>
+            </Dl>
+            <Dl className="btn" id={area.area_id} kind="season.csv">
               Season CSV
-            </a>
-            <a className="btn btn-ghost" href={api.exportUrl(area.area_id, "bundle.zip", qs)} download>
+            </Dl>
+            <Dl className="btn btn-ghost" id={area.area_id} kind="bundle.zip" qs={qs}>
               Bundle (ZIP + README)
-            </a>
+            </Dl>
           </div>
 
           <details className="table-wrap">
@@ -259,5 +260,33 @@ export function AreaPanel() {
         </>
       )}
     </article>
+  );
+}
+
+/** A download: the API's export URL, or in the static deployment a file made in the browser. */
+function Dl({ id, kind, qs = "", className, children }: { id: string; kind: ExportKind; qs?: string; className: string; children: React.ReactNode }) {
+  const [busy, setBusy] = useState(false);
+  if (!STATIC_MODE)
+    return (
+      <a className={className} href={api.exportUrl(id, kind, qs)} download>
+        {children}
+      </a>
+    );
+  const q = new URLSearchParams(qs.replace(/^\?/, ""));
+  return (
+    <button
+      type="button"
+      className={className}
+      aria-busy={busy}
+      disabled={busy}
+      onClick={() => {
+        setBusy(true);
+        exportFile(id, kind, { start: q.get("start") ?? undefined, end: q.get("end") ?? undefined })
+          .catch((e) => window.alert(e instanceof ApiFailure ? e.message : "The download could not be made. Please try again."))
+          .finally(() => setBusy(false));
+      }}
+    >
+      {busy ? "Preparing…" : children}
+    </button>
   );
 }

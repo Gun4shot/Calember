@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { api } from "../app/api";
+import { outlineOfDrawn } from "../app/engine/region";
 import type { Calendar } from "../app/types";
 import { type GlobeData, loadGlobe, loadWorld, outlineOf } from "./data";
 import { centerOf, polysOf } from "./geo";
@@ -80,14 +81,15 @@ let opening: string | null = null;
 
 async function openArea(id: string, station: string | undefined, q: URLSearchParams) {
   {
-    const outline = await outlineOf(id).catch(() => null);
-    const polys = outline ? polysOf(outline.f.geometry) : [];
+    const outline = id.startsWith("x_") ? null : await outlineOf(id).catch(() => null);
+    const drawnRing = id.startsWith("x_") ? outlineOfDrawn(id) : null;
+    const polys = outline ? polysOf(outline.f.geometry) : drawnRing ? [drawnRing] : [];
     const c: Candidate = {
-      name: outline?.name ?? id,
-      kind: id.startsWith("ISO-") ? "Country" : id === "WORLD" ? "World" : id.startsWith("BIOME-") ? "Biome" : id.startsWith("a_") ? "Area" : "Province",
+      name: outline?.name ?? (id.startsWith("x_c_") ? `Custom area (${id.split("_").pop()} km circle)` : id.startsWith("x_") ? "Custom area" : id),
+      kind: id.startsWith("ISO-") ? "Country" : id === "WORLD" ? "World" : id.startsWith("BIOME-") ? "Biome" : id.startsWith("a_") || id.startsWith("x_") ? "Area" : "Province",
       polys,
       center: polys.length ? centerOf(polys) : [cam.lon, Math.max(-40, Math.min(50, cam.lat))],
-      request: () => (id.startsWith("a_") ? api.area(id) : api.areaByAdmin(id)),
+      request: () => (id.startsWith("a_") || id.startsWith("x_") ? api.area(id) : api.areaByAdmin(id)),
       linkId: id,
     };
     flyTo(c.center[1], c.center[0], cam.dist, 0.01);

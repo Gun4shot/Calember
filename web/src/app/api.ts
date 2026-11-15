@@ -1,5 +1,9 @@
 import type { ApiError, Area, AreaCells, AreaCellsMonth, AreaDaily, AreaPlaces, Rankings, Calendar, Drift, Health, FireRegime, Now, Season, SearchEntry, TuringRound, Twins, ValidationReport } from "./types";
 
+import * as engine from "./engine/region";
+import { drawnSource, runExport, type ExportKind, type ExportOptions, type ExportSource } from "./engine/exports";
+import { STATIC_MODE, SnapMissing, bundle, dailyFrom, nowFrom, snap } from "./snapshot";
+
 // Same-origin /api in dev (Vite proxy) and in production unless VITE_API_BASE points elsewhere.
 const API = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, "") ?? "";
 const STATIC = `${import.meta.env.BASE_URL}static`;
@@ -33,7 +37,30 @@ async function staticJson<T>(name: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-export const api = {
+// Static mode (no Python server): named places read the precomputed snapshot, drawn areas are computed in the browser
+// from the region tiles (engine/), and live detections and the Turing score come from Cloudflare Pages Functions.
+function viaSnap<T>(fn: () => Promise<T>): Promise<T> {
+  return fn().catch((e) => {
+    if (e instanceof SnapMissing) throw new ApiFailure("not_found", e.message.includes(":") ? "This place is not in the record." : e.message);
+    if (e instanceof engine.EngineError) throw new ApiFailure(e.code, e.message);
+    if (e instanceof ApiFailure) throw e;
+    throw new ApiFailure("upstream_unavailable", "Could not load the data for this area. Check your connection and try again.");
+  });
+}
+const isDrawn = engine.isDrawnId;
+const drawnArea = (id: string) => viaSnap(async () => (await engine.drawn(id)).area);
+
+/** The export source of any area id (named place or drawn). */
+export async function exportSource(id: string): Promise<ExportSource> {
+  if (isDrawn(id)) return drawnSource(id);
+  const b = await bundle(id);
+  return { area: b.area, calendar: async () => b.calendar, season: async () => b.season };
+}
+/** Runs a download in the browser (static mode). Errors come back as ApiFailure with a message for the user. */
+export const exportFile = (id: string, kind: ExportKind, o?: ExportOptions) => viaSnap(async () => runExport(await exportSource(id), kind, o));
+export type { ExportKind };
+
+const live = {
   health: () => call<Health>("/api/health"),
   areaByAdmin: (admin_id: string) => call<Area>("/api/areas", { method: "POST", body: JSON.stringify({ admin_id }) }),
   areaByCircle: (lat: number, lon: number, radius_km: number) =>
@@ -59,6 +86,59 @@ export const api = {
     call<{ correct: boolean; modis_is: "a" | "b" }>("/api/turing/answer", { method: "POST", body: JSON.stringify({ round_id, choice }) }),
   turingStats: () => call<Record<"raw" | "harmonized", { n: number; accuracy: number | null }>>("/api/turing/stats"),
 };
+
+export const api: typeof live = STATIC_MODE
+  ? {
+      ...live,
+      health: () => viaSnap(snap.health),
+      areaByAdmin: (id) => viaSnap(() => snap.area(id)),
+      areaByCircle: (lat, lon, km) => drawnArea(engine.circleId(lat, lon, km)),
+      areaByPolygon: (coords) => drawnArea(engine.polygonId(coords)),
+      areaByCells: (cells) => {
+        const id = engine.cellsId(cells);
+        return id ? drawnArea(id) : Promise.reject(new ApiFailure("invalid_geometry", "Pick one region at a time."));
+      },
+      area: (id) => (isDrawn(id) ? drawnArea(id) : viaSnap(() => snap.area(id))),
+      cells: (id) => viaSnap(() => (isDrawn(id) ? engine.cells(id) : snap.cells(id))),
+      cellsMonth: (id, month) =>
+        viaSnap(async () => {
+          if (isDrawn(id)) return engine.cellsMonth(id, month);
+          // large named places (over 4,000 cells) have no month grid in the snapshot: sum the region tiles instead
+          return snap.cellsMonth(id, month).catch(async (e) => {
+            if (!(e instanceof SnapMissing)) throw e;
+            const c = await snap.cells(id);
+            return { ...(await engine.cellsMonth(id, month, 2003, 2025, c.cells)), area_id: id };
+          });
+        }),
+      daily: (id, month) =>
+        viaSnap(async () => {
+          if (!isDrawn(id)) return snap.daily(id, month);
+          const d = await engine.drawn(id);
+          return dailyFrom(await engine.loadDaily(id, d.area.cells_r5), id, month);
+        }),
+      places: (id) => viaSnap(() => (isDrawn(id) ? engine.places(id) : snap.places(id))),
+      rankings: (month) => viaSnap(() => snap.rankings(month)),
+      calendar: (id) => viaSnap(() => (isDrawn(id) ? engine.calendar(id) : snap.calendar(id))),
+      season: (id) => viaSnap(() => (isDrawn(id) ? engine.season(id) : snap.season(id))),
+      twins: (id, mode) => viaSnap(() => (isDrawn(id) ? engine.twins(id, mode) : snap.twins(id, mode))),
+      now: (id) =>
+        viaSnap(async () => {
+          if (!isDrawn(id)) return snap.now(id);
+          const [{ area, inputs }, cal] = await Promise.all([engine.nowInputs(id), engine.calendar(id)]);
+          return nowFrom({ area, calendar: cal, now_inputs: inputs }, await engine.loadDaily(id, area.cells_r5));
+        }),
+      // the Sensor Turing test: answers and the crowd score are kept by a Pages Function (D1); answers are checked offline too
+      turingAnswer: async (round_id, choice) => {
+        try {
+          return await call<{ correct: boolean; modis_is: "a" | "b" }>("/api/turing/answer", { method: "POST", body: JSON.stringify({ round_id, choice }) });
+        } catch {
+          const r = (await statics.turing()).rounds.find((x) => x.id === round_id) as (TuringRound & { modis_is?: "a" | "b" }) | undefined;
+          if (!r?.modis_is) throw new ApiFailure("not_found", "Unknown round.");
+          return { correct: choice === r.modis_is, modis_is: r.modis_is };
+        }
+      },
+    }
+  : live;
 
 export const statics = {
   search: () => staticJson<SearchEntry[]>("search_index.json"),
