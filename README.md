@@ -1,3 +1,12 @@
+**🌍 Live: [calember.earth](https://calember.earth)**
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="web/public/calember-logo-dark.svg">
+    <img src="web/public/calember-logo.svg" alt="Calember logo: a flame inside a satellite crosshair" width="160">
+  </picture>
+</p>
+
 # Calember
 
 **The fire memory that outlives its satellites.**
@@ -16,7 +25,7 @@ Calember translates every VIIRS detection month into **hotspots (MODIS-equivalen
 | 2012 sensor jump | 400 % raw → **4.0 %** harmonized |
 | Sensor Turing test (can a classifier tell real MODIS from ours? 50 % = coin flip) | **55 %** (raw VIIRS: 77 %) |
 
-**Live site: https://calember.pages.dev** · the story at `/`, the Observatory at `/app`, the classic view at `/classic`.
+**Live site: [calember.earth](https://calember.earth)** · the story at `/`, the Observatory at `/app`, the classic view at `/classic` (mirror: https://calember.pages.dev).
 
 ---
 

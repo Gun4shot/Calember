@@ -597,6 +597,7 @@ function Gate({ onBegin, onSkip, seen }: { onBegin: (s: boolean) => void; onSkip
           {typed}
           <span className="caret" />
         </p>
+        <img className="gate-logo" src="/calember-logo-dark.svg" alt="" aria-hidden="true" />
         <h1 id="gate-title" className="gate-title" aria-label="Calember">
           {"Calember".split("").map((ch, i) => (
             <span key={i} aria-hidden="true" style={{ animationDelay: `${300 + i * 130}ms` }}>

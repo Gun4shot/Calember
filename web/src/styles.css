@@ -79,13 +79,12 @@ body {
 .wordmark::before {
   content: "";
   display: inline-block;
-  width: 7px;
-  height: 7px;
+  width: 24px;
+  height: 24px;
   margin-right: 9px;
-  border-radius: 50%;
-  background: var(--ember);
-  box-shadow: 0 0 12px 2px rgba(255, 106, 31, 0.8);
-  vertical-align: 2px;
+  background: url("/calember-mark.svg") center / contain no-repeat;
+  filter: drop-shadow(0 0 6px rgba(255, 122, 40, 0.45));
+  vertical-align: -6px;
 }
 .topbar-actions {
   display: flex;
@@ -1770,4 +1769,17 @@ body[data-method="1"] .l3d { opacity: 0 !important; }
   .gap-card { left: 40px; top: -88px; max-width: 180px; padding: 7px 10px 8px; }
   .gap-card span { font-size: 0.82rem; }
   .gap-line { width: 46px; }
+}
+
+/* the logo on the story's opening screen */
+.gate-logo {
+  display: block;
+  width: clamp(84px, 11vh, 120px);
+  height: auto;
+  margin: 0 auto 10px;
+  filter: drop-shadow(0 0 22px rgba(255, 122, 40, 0.35));
+  animation: gate-logo-in 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) both 0.15s;
+}
+@keyframes gate-logo-in {
+  from { opacity: 0; transform: scale(0.82) rotate(-25deg); }
 }

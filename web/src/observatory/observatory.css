@@ -70,7 +70,7 @@ kbd { font: 500 10.5px/1 var(--mono); padding: 3px 5px; border-radius: 4px; bord
 /* ---------- top bar ---------- */
 .topbar2 { position: absolute; top: 0; left: 0; right: 0; height: var(--top); display: flex; align-items: center; gap: 18px; padding: 0 18px; background: linear-gradient(180deg, rgba(4, 6, 11, 0.85), rgba(4, 6, 11, 0)); z-index: 30; }
 .brand2 { display: flex; align-items: baseline; gap: 8px; color: var(--ink); text-decoration: none; }
-.brand2-mark { align-self: center; width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 40% 40%, #fff4b8, var(--hot-2) 35%, var(--hot) 70%, transparent 72%); box-shadow: 0 0 16px rgba(255, 138, 61, 0.85); animation: ember-breathe 3.2s ease-in-out infinite; }
+.brand2-mark { align-self: center; flex: none; width: 24px; height: 24px; background: url("/calember-mark.svg") center / contain no-repeat; filter: drop-shadow(0 0 6px rgba(255, 122, 40, 0.45)); }
 @keyframes ember-breathe { 50% { box-shadow: 0 0 26px rgba(255, 138, 61, 1); transform: scale(1.08); } }
 .brand2-name { font: 600 21px/1 var(--serif); letter-spacing: 0.01em; }
 .brand2-sub { font: 500 10.5px/1 var(--mono); letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); }
