@@ -220,7 +220,7 @@ export function buildCaptions(d: StoryData): Caption[] {
       b: 0.16,
       kicker: `Look closer · ${dayLabel(gd.date)} · one real day`,
       text: "Here is the real planet, one afternoon, as Aqua's MODIS saw it.",
-      sub: "The dark stripes are gaps between its passes: places MODIS never saw that day.",
+      sub: "The dark stripes are not a glitch: they are gaps between its passes, places MODIS never saw that day.",
     },
     {
       id: "eyes_modis",

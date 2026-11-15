@@ -6,7 +6,7 @@ import { MONTHS_SHORT, fmt } from "../../app/format";
 import type { AreaDaily } from "../../app/types";
 import { fmtS } from "./glyphs";
 
-const W = 330, H = 118, L = 4, R = 4, T = 8, B = 16;
+const W = 330, H = 156, L = 4, R = 4, T = 22, B = 16;
 /** 0.04× stays 0.04× (not "0.0×"), 1.6× stays 1.6×, 23× stays 23×. */
 const xTimes = (r: number) => `${r >= 10 ? Math.round(r) : r >= 0.1 ? r.toFixed(1) : r.toFixed(2)}×`;
 
@@ -59,8 +59,25 @@ export function DailyStrip({ areaId, month }: { areaId: string; month: string })
   const hv = hover !== null && d ? d.days[hover] : null;
   return (
     <div className="daily">
+      <p className="kicker daily-kicker">Day by day · {mName} {month.slice(0, 4)}</p>
       <div className="daily-head">
-        <p className="kicker">Day by day · {mName} {month.slice(0, 4)}</p>
+        <div className="daily-title">
+          {d && have.length > 0 && (
+            <p className="daily-big">
+              {mode === "daily" ? (
+                <>
+                  <b className={above > 0 ? "hi" : ""}>{above}</b> of {have.length} days above usual
+                </>
+              ) : (
+                last && (
+                  <>
+                    <b>{last.cum_typical > 0 ? xTimes(last.cum / last.cum_typical) : "–"}</b> a typical month by day {last.day}
+                  </>
+                )
+              )}
+            </p>
+          )}
+        </div>
         <div className="seg2 tiny" role="radiogroup" aria-label="Daily view">
           <button type="button" role="radio" aria-checked={mode === "daily"} onClick={() => setMode("daily")}>
             each day
@@ -81,8 +98,14 @@ export function DailyStrip({ areaId, month }: { areaId: string; month: string })
           aria-label={`${mName} ${month.slice(0, 4)} day by day. ${busiest ? `Busiest day ${busiest.day} with ${fmt(busiest.h)} hotspots.` : ""} ${above} days above the usual range.`}
           onMouseLeave={() => setHover(null)}
         >
+          <defs>
+            <linearGradient id="d-bar-g" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0" stopColor="#6b4424" />
+              <stop offset="1" stopColor="#ffc27a" />
+            </linearGradient>
+          </defs>
           <path d={g.band} className="d-band" />
-          <path d={g.med} className="d-med" />
+          <path d={g.med} className="d-med" pathLength={1} />
           {g.kind === "daily" &&
             d.days.map((v, i) =>
               v.h === null ? (
@@ -100,6 +123,14 @@ export function DailyStrip({ areaId, month }: { areaId: string; month: string })
               ),
             )}
           {g.kind === "cum" && <path d={g.line} className="d-line" pathLength={1} />}
+          {g.kind === "daily" && busiest && (busiest.h ?? 0) > 0 && hover === null && (
+            <g className="d-peak" style={{ animationDelay: `${(busiest.day - 1) * 22 + 450}ms` }}>
+              <circle cx={g.x(busiest.day - 1) + g.bw / 2} cy={g.y(busiest.h ?? 0) - 4} r={2.2} />
+              <text x={Math.min(W - 18, Math.max(18, g.x(busiest.day - 1) + g.bw / 2))} y={g.y(busiest.h ?? 0) - 9} textAnchor="middle">
+                {fmtS(busiest.h)}
+              </text>
+            </g>
+          )}
           {d.days.map((_, i) => (
             <rect key={`h${i}`} x={g.x(i)} y={0} width={g.bw} height={H} fill="transparent" onMouseEnter={() => setHover(i)} />
           ))}
@@ -137,7 +168,7 @@ export function DailyStrip({ areaId, month }: { areaId: string; month: string })
         ) : d && busiest ? (
           mode === "daily" ? (
             <>
-              Busiest day: <b>{mName} {busiest.day}</b> ({fmtS(busiest.h)}). {above} of {have.length} days above the usual range.
+              Busiest day: <b>{mName} {busiest.day}</b> ({fmtS(busiest.h)}). Point at a day for its numbers.
             </>
           ) : (
             last && (

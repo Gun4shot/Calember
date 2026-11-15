@@ -338,6 +338,7 @@ export function Ridge({ data }: Props) {
         film.lensMonth = lerp(sw - 18, n - 8, s);
       }
       film.lensActive = true;
+      film.lensUser = lensTouched.current;
     } else {
       film.lensActive = false;
     }
@@ -411,6 +412,7 @@ export function Ridge({ data }: Props) {
 
   const onMove = (e: ThreeEvent<PointerEvent>) => {
     if (!film.lensActive) return;
+    if (!lensTouched.current) lastLensMonth.current = -1; // the jump from the idle sweep to the pointer is not a fast swipe
     lensTouched.current = true;
     const mi = e.point.x / MONTH_W + n / 2;
     film.lensMonth = clamp(mi, LENS_MONTHS / 2, n - 1 - LENS_MONTHS / 2);

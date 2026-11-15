@@ -23,6 +23,8 @@ export const film = {
   /** lens position along the ridge in months (fractional index), -1 = hidden */
   lensMonth: -1,
   lensActive: false,
+  /** the viewer has taken the lens (only then does it make sound: the idle sweep stays silent) */
+  lensUser: false,
   /** lens speed 0..1 (for the whoosh) */
   lensSpeed: 0,
   /** displayed region index on the ridge (fractional during cross-fades) */

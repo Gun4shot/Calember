@@ -49,7 +49,7 @@ function AudioDriver({ data }: { data: StoryData }) {
     prev.current = t;
     prevU.current = film.u;
     // lens notes
-    if (film.lensActive) {
+    if (film.lensActive && film.lensUser) {
       const mi = Math.round(film.lensMonth);
       if (mi !== lastLens.current && lastLens.current >= 0) {
         const reg = data.ridge.regions[useUI.getState().regionIdx];
@@ -58,9 +58,12 @@ function AudioDriver({ data }: { data: StoryData }) {
         lensNote(Math.sqrt(reg.raw_sum[mi] / mx), Math.sqrt(reg.harmonized[mi] / mx) * 2.2);
         if (coarse) buzz(4);
       }
-      lensWhoosh(film.lensSpeed);
+      lensWhoosh(film.lensSpeed, dt);
       lastLens.current = mi;
-    } else lastLens.current = -1;
+    } else {
+      lastLens.current = -1;
+      lensWhoosh(0, dt);
+    }
   });
   return null;
 }

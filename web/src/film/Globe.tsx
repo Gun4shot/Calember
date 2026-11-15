@@ -1,6 +1,7 @@
 // Act I/II and the ending: a night Earth made of land dots, with one glowing hex column
 // per H3 r3 fire cell. Heights come from the real monthly files (harmonized or raw).
 
+import { Html } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -95,6 +96,7 @@ const SPHERE_FS = /* glsl */ `
 const EYES_FS = /* glsl */ `
   uniform sampler2D uTcM; uniform sampler2D uTcV; uniform sampler2D uPM; uniform sampler2D uPV;
   uniform float uImg; uniform float uSweep; uniform float uSweepW; uniform float uEdge; uniform float uFocus;
+  uniform float uGapHi; uniform float uTime;
   varying vec3 vN; varying vec3 vV; varying vec3 vLocal;
 
   uniform float uLo; uniform float uHi; uniform float uViewLon;
@@ -125,6 +127,10 @@ const EYES_FS = /* glsl */ `
     float gap = (1.0 - smoothstep(0.012, 0.045, dot(m, vec3(0.333)))) * step(abs(lat), 62.0);
     float hatch = step(0.5, fract((vLocal.x * 0.7 + vLocal.y) * 120.0));
     m = mix(m, vec3(0.05, 0.06, 0.08) + vec3(0.05, 0.06, 0.08) * hatch, gap); // no data: neutral dark hatch, not fire-red
+    // "look closer": the gaps are marked as no-data on purpose, with a slow ice-blue hatch that drifts and breathes
+    float flow = step(0.55, fract((vLocal.x * 0.7 + vLocal.y) * 60.0 - uTime * 0.5));
+    float breathe = 0.7 + 0.3 * sin(uTime * 2.4);
+    m = mix(m, vec3(0.34, 0.58, 0.92) * (0.3 + 0.7 * flow), gap * uGapHi * 0.6 * breathe);
     vec3 c = mix(m, v, isV) * 0.62;
     // in the dive, the blurry 10 km global pixels around the sharp close-up step back
     c *= mix(1.0, 0.45 + 0.55 * inP, uFocus);
@@ -361,6 +367,8 @@ export function Globe({ data }: { data: StoryData }) {
         uSweepW: { value: 118 },
         uEdge: { value: 0 },
         uFocus: { value: 0 },
+        uGapHi: { value: 0 },
+        uTime: { value: 0 },
         ...MASK_U,
       },
       transparent: true,
@@ -375,6 +383,7 @@ export function Globe({ data }: { data: StoryData }) {
         tex.anisotropy = 8;
         mat.uniforms[key].value = tex;
         mat.userData.loaded = (mat.userData.loaded ?? 0) + 1;
+        if (key === "uTcM") mat.userData.gaps = findGaps(tex.image as CanvasImageSource);
         gl.initTexture(tex); // upload now, not on the first frame of the swipe
       });
     load("modis_aqua_truecolor_2016-11-07.jpg", "uTcM", false);
@@ -426,6 +435,9 @@ export function Globe({ data }: { data: StoryData }) {
     return { pts, ptsMat };
   }, [data.extras.globe_dive, eyesMat]);
   const eyesMesh = useRef<THREE.Mesh>(null);
+  const gapAnchor = useRef<THREE.Group>(null);
+  const gapTag = useRef<HTMLDivElement>(null);
+  const gapPick = useRef<GapPt | null>(null);
   const tmpV = useMemo(() => new THREE.Vector3(), []);
   const invQ = useMemo(() => GLOBE_Q.clone().invert(), []);
 
@@ -448,6 +460,45 @@ export function Globe({ data }: { data: StoryData }) {
     const dist = tmpV.length();
     tmpV.applyQuaternion(invQ);
     MASK_U.uViewLon.value = (Math.atan2(tmpV.x, tmpV.z) * 180) / Math.PI;
+    // the gaps between MODIS passes: highlighted, with a callout pinned on one real stripe, while the planet is shown whole
+    const gapHi = live ? ramp(EYES.synIn[0] + 0.05, EYES.synIn[1], sv) * (1 - ramp(EYES.dive[0] - 0.01, EYES.dive[0] + 0.015, sv)) : 0;
+    eyesMat.uniforms.uGapHi.value = gapHi;
+    eyesMat.uniforms.uTime.value = state.clock.elapsedTime;
+    let tagA = 0;
+    const gaps = eyesMat.userData.gaps as GapPt[] | undefined;
+    if (gapHi > 0.001 && gaps?.length && gapAnchor.current) {
+      // the stripe a little left of and above the centre of the view, so the card never sits on the caption
+      const view = MASK_U.uViewLon.value;
+      const dl = (lon: number) => ((lon - view + 540) % 360) - 180;
+      let best: GapPt | null = null;
+      let bestScore = Infinity;
+      for (const g of gaps) {
+        const d = dl(g.lon);
+        if (Math.abs(d) > 45) continue;
+        const sc = Math.abs(d + 16) + 0.6 * Math.abs(g.lat - 16);
+        if (sc < bestScore) {
+          bestScore = sc;
+          best = g;
+        }
+      }
+      if (best) {
+        if (gapPick.current !== best) {
+          gapPick.current = best;
+          const v = latLonToVec(best.lat, best.lon);
+          gapAnchor.current.position.set(v[0] * R * 1.003, v[1] * R * 1.003, v[2] * R * 1.003);
+        }
+        // only once the swipe has revealed that stripe
+        const revealed = MASK_U.uHi.value > dl(best.lon) + 4 ? 1 : 0;
+        tagA = gapHi * revealed;
+      }
+    }
+    if (gapTag.current) {
+      const a = tagA.toFixed(3);
+      if (gapTag.current.style.opacity !== a) {
+        gapTag.current.style.opacity = a;
+        gapTag.current.style.visibility = tagA > 0.001 ? "visible" : "hidden";
+      }
+    }
     // sweep width ≈ half of what is on screen (a hemisphere far away, a few degrees in the dive)
     const cam = state.camera as THREE.PerspectiveCamera;
     const half = (((dist - R) * Math.tan(((cam.fov / 2) * Math.PI) / 180) * cam.aspect) / R) * (180 / Math.PI) * 1.1;
@@ -510,7 +561,55 @@ export function Globe({ data }: { data: StoryData }) {
         <primitive object={dots} renderOrder={1} />
         <primitive object={pts} renderOrder={4} />
         <primitive object={columns} renderOrder={2} />
+        <group ref={gapAnchor}>
+          <Html zIndexRange={[4, 0]} style={{ pointerEvents: "none" }}>
+            <div ref={gapTag} className="gap-tag" style={{ opacity: 0, visibility: "hidden" }} aria-hidden="true">
+              <i className="gap-ring" />
+              <i className="gap-line" />
+              <div className="gap-card">
+                <b>Not a glitch</b>
+                <span>A gap between MODIS&rsquo;s passes. It never saw this strip that day.</span>
+              </div>
+            </div>
+          </Html>
+        </group>
       </group>
     </>
   );
+}
+
+interface GapPt {
+  lat: number;
+  lon: number;
+}
+/** Centres of MODIS's no-data stripes along a few latitudes, read from the day's true-colour image (the same
+ *  "near black" rule as the shader). Used to pin the "not a glitch" callout on a real stripe. */
+function findGaps(img: CanvasImageSource): GapPt[] {
+  try {
+    const W = 1024, H = 512;
+    const cv = document.createElement("canvas");
+    cv.width = W;
+    cv.height = H;
+    const cx = cv.getContext("2d", { willReadFrequently: true });
+    if (!cx) return [];
+    cx.drawImage(img, 0, 0, W, H);
+    const out: GapPt[] = [];
+    for (const lat of [-8, 0, 8, 16, 24, 32]) {
+      const row = Math.round((0.5 - lat / 180) * H);
+      const px = cx.getImageData(0, row, W, 1).data;
+      let start = -1;
+      for (let x = 0; x <= W; x++) {
+        const dark = x < W && (px[4 * x] + px[4 * x + 1] + px[4 * x + 2]) / 3 < 0.03 * 255;
+        if (dark && start < 0) start = x;
+        if (!dark && start >= 0) {
+          const w = x - start;
+          if (w >= 4 && w <= 80) out.push({ lat, lon: ((start + w / 2) / W - 0.5) * 360 });
+          start = -1;
+        }
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
 }

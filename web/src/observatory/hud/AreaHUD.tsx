@@ -255,7 +255,7 @@ function AnswerStrip() {
       {now && now.category && (
         <span className={`ans cat-${now.category}`}>
           <b>{MONTHS_LONG[Number(now.month.slice(5)) - 1]} so far</b> {CAT_GLYPH[now.category]} {CATEGORY_LABEL[now.category]}
-          <span className={`live-dot ${now.source_status}`} title={`Live data: ${now.source_status}`} />
+          {now.source_status !== "unavailable" && <span className={`live-dot ${now.source_status}`} title={now.source_status === "ok" ? "Live NASA FIRMS data" : "Live data, a little behind"} />}
         </span>
       )}
       {peak && (
@@ -353,7 +353,8 @@ function VerdictPanel({ cal }: { cal: Calendar }) {
       <p className="kicker">
         {lead ? "Right now · " : ""}
         {MONTHS_LONG[Number(now.month.slice(5)) - 1]} so far · day {now.days_elapsed} of {now.days_in_month}
-        <span className={`live-pill ${now.source_status}`}>{now.source_status === "ok" ? "live" : now.source_status}</span>
+        {/* only a connected live feed earns a pill; otherwise the stored record answers quietly (details under "More") */}
+        {now.source_status === "ok" && <span className="live-pill ok">live</span>}
       </p>
       <Gauge value={now.mtd_h_count} expected={now.expected_mtd} lo={now.mtd_lo90} hi={now.mtd_hi90} />
       <More label="More">

@@ -258,6 +258,14 @@ export const sfx = {
     for (let k = 5; k >= 0; k--) tone(hz(74 + PENTA[k % 5]), 0.4, { gain: 0.035, type: "triangle", at: (5 - k) * 0.15, reverb: 0.9 });
     noise(1.0, { from: 3000, to: 250, gain: 0.1, at: 0.9 });
   },
+  /** two places meet (compare): an amber note and an ice note glide toward each other, then settle together */
+  compare() {
+    noise(0.9, { from: 400, to: 3600, gain: 0.06, q: 1.2 });
+    tone(hz(67), 0.9, { gain: 0.05, type: "triangle", glideTo: hz(69), reverb: 0.8, at: 0.25 });
+    tone(hz(88), 0.9, { gain: 0.03, type: "sine", glideTo: hz(81), reverb: 0.9, at: 0.25 });
+    tone(hz(74), 1.3, { gain: 0.04, type: "triangle", at: 1.4, reverb: 1 });
+    tone(hz(81), 1.3, { gain: 0.025, type: "sine", at: 1.48, reverb: 1 });
+  },
   /** leaving the area: reverse whoosh */
   close() {
     noise(1.0, { from: 2400, to: 200, gain: 0.1 });

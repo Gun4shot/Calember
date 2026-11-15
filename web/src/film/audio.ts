@@ -31,6 +31,9 @@ interface Graph {
   beatGain: ToneNS.Gain;
   pad: ToneNS.PolySynth;
   bell: ToneNS.PolySynth;
+  lens: ToneNS.PolySynth;
+  airGain: ToneNS.Gain;
+  airFilter: ToneNS.Filter;
 }
 let G: Graph | null = null;
 
@@ -106,7 +109,20 @@ export async function initAudio(): Promise<void> {
     volume: -18,
   }).connect(bus);
 
-  G = { master, droneGain, droneFilter, pops, popFilter, bedGain, bedFilter, modis, viirs, hit, whoosh, whooshFilter, beatA, beatB, beatGain, pad, bell };
+  // lens playground: a soft, rounded mallet (sine, 8 ms attack, lowpassed) instead of the bright FM voice.
+  // Fast drags used to fire FM notes up to B6 many times a second: that was the sharp, high-pitched "glitch".
+  const lens = new T_.PolySynth({
+    maxPolyphony: 8,
+    voice: T_.Synth,
+    options: { oscillator: { type: "sine" }, envelope: { attack: 0.008, decay: 0.28, sustain: 0, release: 0.25 }, volume: -14 },
+  }).connect(new T_.Filter(1600, "lowpass").connect(bus));
+  // lens swipes: a continuous air bed whose gain follows the swipe speed. The old NoiseSynth whoosh restarted
+  // its noise source on every retrigger mid-envelope, which clicked several times a second.
+  const airGain = new T_.Gain(0).connect(bus);
+  const airFilter = new T_.Filter({ frequency: 800, type: "bandpass", Q: 1.1 }).connect(airGain);
+  new T_.Noise("pink").connect(airFilter).start();
+
+  G = { master, droneGain, droneFilter, pops, popFilter, bedGain, bedFilter, modis, viirs, hit, whoosh, whooshFilter, beatA, beatB, beatGain, pad, bell, lens, airGain, airFilter };
   ready = true;
   setMuted(muted);
 }
@@ -185,28 +201,34 @@ export function audioTick(prevT: number, t: number, dt: number, activity: number
   }
 }
 
-/** Lens playground: two voices per month entering the lens, raw (glassy) over harmonized (woody). */
+/** Lens playground: one soft note per month entering the lens (raw above, harmonized below, both mid-range). */
 let lastNoteAt = 0;
 export function lensNote(raw: number, harm: number) {
   if (!ready || !G || !Tone || muted) return;
   const now = Tone.now();
-  if (now - lastNoteAt < 0.07) return;
+  if (now - lastNoteAt < 0.12) return; // at most ~8 notes a second, however fast the drag
   lastNoteAt = now;
-  const rs = Math.round(clamp(raw) * 14);
-  const hs = Math.round(clamp(harm) * 14);
-  G.viirs.triggerAttackRelease(note(rs, 4), "32n", now + 0.02, 0.28);
-  G.modis.triggerAttackRelease(note(hs, 3), "32n", now + 0.02, 0.45);
+  const rs = Math.round(clamp(raw) * 9);
+  const hs = Math.round(clamp(harm) * 9);
+  const at = now + 0.03; // scheduled slightly ahead: late events are what click
+  G.lens.triggerAttackRelease(note(rs, 4), 0.09, at, 0.22);
+  G.lens.triggerAttackRelease(note(hs, 3), 0.12, at, 0.3);
 }
 
-/** Lens swept fast: a soft air whoosh proportional to speed (0..1). */
-let lastWhoosh = 0;
-export function lensWhoosh(speed: number) {
-  if (!ready || !G || !Tone || muted || speed < 0.25) return;
-  const now = Tone.now();
-  if (now - lastWhoosh < 0.35) return;
-  lastWhoosh = now;
-  G.whooshFilter.frequency.rampTo(600 + 1800 * clamp(speed), 0.2);
-  G.whoosh.triggerAttackRelease(0.25, now + 0.02, 0.25 * clamp(speed));
+/** Lens swept fast: a soft air bed whose level follows the speed (0..1); call every frame (0 when idle). */
+let airClock = 0;
+let airLevel = -1;
+export function lensWhoosh(speed: number, dt: number) {
+  if (!ready || !G || !Tone) return;
+  airClock += dt;
+  if (airClock < 0.1) return; // ~10 control updates a second, like the other continuous parameters
+  airClock = 0;
+  const s = clamp(speed);
+  const level = muted || s < 0.15 ? 0 : 0.05 + 0.1 * s;
+  if (Math.abs(level - airLevel) < 0.004) return;
+  airLevel = level;
+  G.airGain.gain.rampTo(level, 0.25);
+  G.airFilter.frequency.rampTo(600 + 1400 * s, 0.25);
 }
 
 /** Region switch: a short rising arpeggio. */

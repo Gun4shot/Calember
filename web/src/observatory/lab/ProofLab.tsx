@@ -159,6 +159,12 @@ function Pixels({ ex }: { ex: Extras | null }) {
 // 02 · skill
 function Skill({ v }: { v: ValidationReport }) {
   const rows = (["H0", "H0b", "H1"] as const).map((k) => ({ k, name: v.skill.level_names[k] ?? k, b2: v.skill.primary[k]?.primary_kge ?? 0, b3: (v.holdout_2020.levels as Record<string, { primary_kge: number }>)[k]?.primary_kge ?? 0 }));
+  const ex = v.holdout_2020.excluding_aqua_outage as Record<string, { primary?: number } | string | undefined>;
+  const pick = (k: string) => {
+    const e = ex?.[k];
+    return typeof e === "object" && typeof e.primary === "number" ? e.primary : undefined;
+  };
+  const exH1 = pick("H1"), exH0b = pick("H0b");
   const lo = 0.9, hi = 1.0;
   const w = (x: number) => `${Math.max(2, ((x - lo) / (hi - lo)) * 100)}%`;
   return (
@@ -184,10 +190,16 @@ function Skill({ v }: { v: ValidationReport }) {
             </div>
           </div>
         ))}
+        {exH1 !== undefined && (
+          <p className="skill-alt">
+            Sealed 2020 without Aqua&rsquo;s Aug 2020 data loss: <b>{exH1.toFixed(4)}</b>
+            {exH0b !== undefined && <i> · ratio table {exH0b.toFixed(4)}</i>}
+          </p>
+        )}
         <p className="legend-line">
           <span className="sw b2" /> unseen regions and years (2018–19) <span className="sw b3" /> sealed 2020 test, run once
         </p>
-        <p className="fine">Axis starts at 0.90 (broken axis). The 2020 test includes Aqua's Aug 2020 data loss: {String((v.holdout_2020.excluding_aqua_outage as { note: string }).note)}.</p>
+        <p className="fine">Axis starts at 0.90 (broken axis). The headline 2020 score keeps Aqua's Aug 2020 data loss in; the second number removes those months after the fact: {String((v.holdout_2020.excluding_aqua_outage as { note: string }).note)}.</p>
       </div>
     </Exhibit>
   );

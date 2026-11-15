@@ -232,6 +232,12 @@ export function ActsOverlay({ data }: { data: StoryData }) {
             </span>
           )}
           <span className={`big-label ${c.extra === "trio" ? "st-head" : ""}`}>{c.label}</span>
+          {c.extra === "versus" && (
+            <span className="vs-alt">
+              Without Aqua&rsquo;s Aug 2020 data loss <b>{r.b3.excl_aqua_outage.ember.toFixed(4)}</b>
+              <i>state-of-the-art style {r.b3.excl_aqua_outage.sota_style.toFixed(4)}</i>
+            </span>
+          )}
           {c.extra === "regimes" && (
             <div className="regimes">
               {D.regimes.map((g) => (
