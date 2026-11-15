@@ -1,0 +1,272 @@
+{
+ "built": "2026-11-14T08:21:48",
+ "data": {
+  "raw_rows_total": 657776870,
+  "raw_rows_by_sensor": {
+   "MODIS": 114509074,
+   "SNPP": 296606426,
+   "NOAA20": 172887487,
+   "NOAA21": 73773883
+  },
+  "satellites": [
+   "Terra",
+   "Aqua",
+   "Suomi NPP",
+   "NOAA-20",
+   "NOAA-21"
+  ],
+  "years": "2000-11 → 2026-11",
+  "mask_cells": 54013,
+  "r5_land_cells": 571982,
+  "r5_cell_km2": 253,
+  "product_rows": 68580846,
+  "product_months": 313,
+  "product_first": "2000-11",
+  "product_last": "2026-11",
+  "product_version": "0.9.1-preH0",
+  "regimes": [
+   {
+    "code": "T",
+    "label": "Terra only, scaled",
+    "from": "2000-11",
+    "to": "2002-06"
+   },
+   {
+    "code": "M",
+    "label": "MODIS observed",
+    "from": "2002-07",
+    "to": "2011-12"
+   },
+   {
+    "code": "B",
+    "label": "MODIS + Calember blend",
+    "from": "2012-01",
+    "to": "2019-12"
+   },
+   {
+    "code": "V",
+    "label": "Calember from VIIRS",
+    "from": "2020-01",
+    "to": "2026-07"
+   },
+   {
+    "code": "N",
+    "label": "Calember, provisional",
+    "from": "2026-08",
+    "to": "2026-11"
+   }
+  ],
+  "train_years": "2012–2019",
+  "folds": 5,
+  "sources": "firms_raw/_manifest.csv, firms_api/*.parquet, products/qa_report.json + meta"
+ },
+ "b2": {
+  "test": "held-out regions and years (2018–2019); trained 2012–2017 on other regions",
+  "models": {
+   "global_ratio": {
+    "primary": 0.9445,
+    "adm1": {
+     "kge": 0.9528,
+     "r2": 0.9581,
+     "bias_pct": 2.32
+    },
+    "country": {
+     "kge": 0.9455,
+     "r2": 0.9689,
+     "bias_pct": 2.32
+    },
+    "biome": {
+     "kge": 0.9353,
+     "r2": 0.9847,
+     "bias_pct": 2.53
+    },
+    "r5": {
+     "kge": 0.913,
+     "r2": 0.8392,
+     "bias_pct": 2.53
+    }
+   },
+   "sota_style": {
+    "primary": 0.9633,
+    "adm1": {
+     "kge": 0.9421,
+     "r2": 0.9784,
+     "bias_pct": 1.65
+    },
+    "country": {
+     "kge": 0.9656,
+     "r2": 0.9871,
+     "bias_pct": 1.65
+    },
+    "biome": {
+     "kge": 0.9822,
+     "r2": 0.9962,
+     "bias_pct": 1.69
+    },
+    "r5": {
+     "kge": 0.9057,
+     "r2": 0.8802,
+     "bias_pct": 1.69
+    }
+   },
+   "ember": {
+    "primary": 0.9913,
+    "adm1": {
+     "kge": 0.9847,
+     "r2": 0.9942,
+     "bias_pct": -0.11
+    },
+    "country": {
+     "kge": 0.992,
+     "r2": 0.9977,
+     "bias_pct": -0.11
+    },
+    "biome": {
+     "kge": 0.9974,
+     "r2": 0.9991,
+     "bias_pct": -0.08
+    },
+    "r5": {
+     "kge": 0.9271,
+     "r2": 0.9142,
+     "bias_pct": -0.08
+    }
+   }
+  },
+  "source": "bench_report_B2*.json"
+ },
+ "b3": {
+  "test": "sealed 2020 holdout, pre-registered, run once; trained 2012–2019",
+  "models": {
+   "global_ratio": {
+    "primary": 0.9435,
+    "adm1": {
+     "kge": 0.9457,
+     "r2": 0.9454,
+     "bias_pct": 3.98
+    },
+    "country": {
+     "kge": 0.9408,
+     "r2": 0.9627,
+     "bias_pct": 3.98
+    },
+    "biome": {
+     "kge": 0.9439,
+     "r2": 0.9803,
+     "bias_pct": 4.16
+    },
+    "r5": {
+     "kge": 0.8966,
+     "r2": 0.8093,
+     "bias_pct": 4.16
+    }
+   },
+   "sota_style": {
+    "primary": 0.9538,
+    "adm1": {
+     "kge": 0.95,
+     "r2": 0.9678,
+     "bias_pct": 3.86
+    },
+    "country": {
+     "kge": 0.955,
+     "r2": 0.9719,
+     "bias_pct": 3.86
+    },
+    "biome": {
+     "kge": 0.9562,
+     "r2": 0.983,
+     "bias_pct": 3.88
+    },
+    "r5": {
+     "kge": 0.9127,
+     "r2": 0.8557,
+     "bias_pct": 3.88
+    }
+   },
+   "ember": {
+    "primary": 0.9684,
+    "adm1": {
+     "kge": 0.9697,
+     "r2": 0.9824,
+     "bias_pct": 2.92
+    },
+    "country": {
+     "kge": 0.969,
+     "r2": 0.9854,
+     "bias_pct": 2.92
+    },
+    "biome": {
+     "kge": 0.9666,
+     "r2": 0.9861,
+     "bias_pct": 2.93
+    },
+    "r5": {
+     "kge": 0.9349,
+     "r2": 0.8945,
+     "bias_pct": 2.93
+    }
+   }
+  },
+  "excl_aqua_outage": {
+   "note": "post hoc: Aqua MODIS lost 80–95 % of detections 2020-08-16 → 09-02; months 2020-08/09 excluded",
+   "global_ratio": 0.9299,
+   "sota_style": 0.975,
+   "ember": 0.9894
+  },
+  "source": "bench_report_B3.json, b3_sensitivity_aqua_gap.json"
+ },
+ "seam": {
+  "test": "median |step| at the sensor switch after removing seasons and MODIS's own change, 15 regions/biomes",
+  "raw_pp": 399.5,
+  "global_ratio_pp": 8.9,
+  "ember_pp": 4.0,
+  "placebo_2015_pp": 2.5,
+  "placebo_2017_pp": 1.7,
+  "handover_2020_pp": 2.6,
+  "source": "seam2_CF2_g_z2_summary.json"
+ },
+ "turing": {
+  "test": "classifier two-sample test on 24-month province records (regions with ≥ 50 MODIS hotspots/month); 0.5 = a coin flip",
+  "n_regions": 678,
+  "ember": 0.551,
+  "ember_seeds": [
+   0.538,
+   0.555,
+   0.559
+  ],
+  "sota_style": 0.589,
+  "raw_viirs": 0.774,
+  "ci_half_width": 0.027,
+  "ember_b3": 0.552,
+  "ember_b3_seeds": [
+   0.537,
+   0.548,
+   0.571
+  ],
+  "ember_b3_regions": 679,
+  "smooth_values_ember": 0.834,
+  "smooth_values_sota": 0.822,
+  "how": "Calember is tested as a realistic sample from its calibrated predictive distribution (MODIS-like counting noise); the smooth calendar values alone are distinguishable for every method",
+  "source": "B2: science/JOURNAL.md 'Turing-test deep-dive' (3 seeds); B3: b3_extras.json; raw + smooth: scorecard_B2_*.json"
+ },
+ "coverage90": {
+  "b2_adm1": 0.9,
+  "b3_adm1": 0.897,
+  "source": "conformal_B2_T_H1E1g_z2.json, b3_extras.json"
+ },
+ "calendar_kappa": {
+  "ember": 0.473,
+  "sota_style": 0.347
+ },
+ "scatter_b3": {
+  "n": 45943,
+  "fields": [
+   "observed",
+   "global_ratio",
+   "sota_style",
+   "ember"
+  ],
+  "unit": "MODIS-equivalent hotspots per province-month, 2020"
+ }
+}

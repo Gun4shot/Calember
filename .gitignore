@@ -1,0 +1,38 @@
+# Data and secrets (never commit)
+data/
+.env
+.env.*
+!.env.example
+
+# Large data / model files outside fixtures
+*.parquet
+!fixtures/**/*.parquet
+*.lgb
+*.pkl
+*.joblib
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Node / web
+node_modules/
+dist/
+.vite/
+coverage/
+playwright-report/
+test-results/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# TypeScript incremental build info
+*.tsbuildinfo

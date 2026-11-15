@@ -1,0 +1,61 @@
+/* ================= Precise 2D map and the globe ⇄ map transition ================= */
+.pmap-wrap { position: absolute; inset: 0; z-index: 25; pointer-events: none; }
+.pmap { position: absolute; inset: 0; clip-path: circle(0px at 50% 52%); pointer-events: auto; background: #05070d; }
+.phase-opening .pmap { animation: iris-open 1.15s cubic-bezier(0.7, 0, 0.2, 1) forwards; }
+.phase-open .pmap { clip-path: none; }
+.phase-closing .pmap { animation: iris-close 0.75s cubic-bezier(0.6, 0, 0.3, 1) forwards; }
+@keyframes iris-open { 0% { clip-path: circle(0px at 50% 52%); filter: saturate(2.2) brightness(1.8) blur(6px); } 55% { filter: saturate(1.4) brightness(1.2) blur(1px); } 100% { clip-path: circle(150vmax at 50% 52%); filter: none; } }
+@keyframes iris-close { 0% { clip-path: circle(150vmax at 50% 52%); filter: none; } 100% { clip-path: circle(0px at 50% 52%); filter: brightness(1.8) blur(4px); } }
+
+.iris { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.iris-ring { position: absolute; left: 50%; top: 52%; width: 0; height: 0; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0; }
+.iris-ring.r1 { border: 2px solid #ffd08a; box-shadow: 0 0 40px 8px rgba(255, 138, 61, 0.55), inset 0 0 40px 4px rgba(255, 138, 61, 0.35); }
+.iris-ring.r2 { border: 1px solid #7fd8ff; box-shadow: 0 0 24px 4px rgba(127, 216, 255, 0.45); }
+.phase-opening .iris-ring.r1 { animation: ring-open 1.15s cubic-bezier(0.7, 0, 0.2, 1) forwards; }
+.phase-opening .iris-ring.r2 { animation: ring-open 1.3s cubic-bezier(0.7, 0, 0.2, 1) 0.08s forwards; }
+.phase-closing .iris-ring.r1 { animation: ring-close 0.75s cubic-bezier(0.6, 0, 0.3, 1) forwards; }
+.phase-closing .iris-ring.r2 { animation: ring-close 0.85s cubic-bezier(0.6, 0, 0.3, 1) forwards; }
+@keyframes ring-open { 0% { width: 0; height: 0; opacity: 1; } 85% { opacity: 1; } 100% { width: 300vmax; height: 300vmax; opacity: 0; } }
+@keyframes ring-close { 0% { width: 300vmax; height: 300vmax; opacity: 0; } 15% { opacity: 1; } 100% { width: 0; height: 0; opacity: 0.9; } }
+/* radar sweep riding the iris */
+.iris-sweep { position: absolute; left: 50%; top: 52%; width: 300vmax; height: 300vmax; transform: translate(-50%, -50%); border-radius: 50%; opacity: 0;
+  background: conic-gradient(from 0deg, rgba(255, 179, 71, 0) 0deg, rgba(255, 179, 71, 0) 300deg, rgba(255, 179, 71, 0.28) 352deg, rgba(255, 240, 200, 0.6) 360deg);
+  mix-blend-mode: screen; }
+.phase-opening .iris-sweep { animation: sweep 2.6s cubic-bezier(0.3, 0, 0.2, 1) 0.2s forwards; }
+.phase-closing .iris-sweep { animation: sweep 0.9s linear reverse forwards; }
+@keyframes sweep { 0% { opacity: 0; transform: translate(-50%, -50%) rotate(0deg); } 12% { opacity: 1; } 80% { opacity: 0.7; } 100% { opacity: 0; transform: translate(-50%, -50%) rotate(720deg); } }
+.iris-flash { position: absolute; left: 50%; top: 52%; width: 70vmin; height: 70vmin; transform: translate(-50%, -50%); border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, rgba(255, 245, 220, 0.9), rgba(255, 160, 80, 0.35) 30%, transparent 65%); }
+.phase-opening .iris-flash { animation: flash 0.7s ease-out forwards; }
+.phase-closing .iris-flash { animation: flash 0.6s ease-out 0.5s forwards; }
+@keyframes flash { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); } }
+
+.unroll-banner { position: absolute; left: 0; right: 0; top: calc(var(--top) + 16px); text-align: center; pointer-events: none; z-index: 2; text-shadow: 0 2px 18px #000; }
+.unroll-banner .kicker { color: var(--hot-2); }
+.ub-text { display: block; margin: 0; font: 400 clamp(22px, 2.6vw, 34px)/1.15 var(--serif); }
+.ub-coord { margin: 6px 0 0; font: 500 11px var(--mono); letter-spacing: 0.12em; color: var(--viirs); }
+
+.pmap-bar { position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--top) + 8px); display: flex; align-items: center; gap: 10px; padding: 8px 10px; pointer-events: auto; animation: bar-in 0.6s cubic-bezier(0.2, 0.9, 0.25, 1.2) both; max-width: calc(100vw - 24px); flex-wrap: wrap; }
+@keyframes bar-in { from { opacity: 0; transform: translate(-50%, -12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.back3d svg { width: 16px; height: 16px; }
+.pmap-hint { font-size: 12px; color: var(--ink-2); padding-right: 6px; }
+.pmap-read { position: absolute; left: 22px; bottom: 44px; padding: 6px 10px; font: 11px var(--mono); color: var(--ink-2); pointer-events: none; }
+.pmap-legend { position: absolute; right: 22px; top: calc(var(--top) + 8px); width: 230px; padding: 12px 14px; pointer-events: auto; animation: panel-in 0.7s both 0.1s; }
+.pmap-wrap .hover-tag { top: calc(var(--top) + 64px); }
+.pmap .maplibregl-ctrl-attrib { background: rgba(5, 7, 13, 0.7) !important; color: var(--muted) !important; }
+.pmap .maplibregl-ctrl-attrib a { color: var(--muted) !important; }
+.pmap .maplibregl-ctrl-scale { background: rgba(5, 7, 13, 0.7); color: var(--ink-2); border-color: var(--ink-2); font: 10px var(--mono); }
+.pmap .maplibregl-ctrl-group { background: rgba(10, 14, 24, 0.8); border: 1px solid var(--line); }
+.pmap .maplibregl-ctrl-group button + button { border-top-color: var(--line); }
+.pmap .maplibregl-ctrl-icon { filter: invert(0.85); }
+.pmap .maplibregl-ctrl-bottom-left { bottom: 6px; }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .pmap, .iris-ring, .iris-sweep, .iris-flash { animation: none !important; }
+  .phase-opening .pmap, .phase-open .pmap { clip-path: none; }
+}
+@media (max-width: 640px) {
+  .pmap-legend { display: none; }
+  .pmap-hint { display: none; }
+}

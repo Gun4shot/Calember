@@ -1,0 +1,7 @@
+# Normalize line endings across Windows/macOS/Linux teammates
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.parquet binary
+*.u8 binary
+*.stl binary

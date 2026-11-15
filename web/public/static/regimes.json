@@ -1,0 +1,312 @@
+[
+ {
+  "regime_id": 1,
+  "name": "Two seasons (Mar-May and Aug-Nov), sparse, stable",
+  "description": "About 69% of the year's hotspots fall in Mar-May; typically 2.7 hotspots per 1,000 km² a year; totals vary 64% from year to year and the trend is stable (+2 % per decade).",
+  "timing_coherence": 0.917,
+  "shape12": [
+   0.0535,
+   0.0729,
+   0.1236,
+   0.1103,
+   0.0789,
+   0.0715,
+   0.0801,
+   0.097,
+   0.0964,
+   0.0991,
+   0.0714,
+   0.0453
+  ],
+  "n_units": 1890,
+  "example_units": [
+   "8394c5fffffffff",
+   "8394f2fffffffff",
+   "839488fffffffff"
+  ],
+  "example_names": [
+   "Northern Territory, Australia",
+   "Western Australia, Australia",
+   "Western Australia, Australia"
+  ]
+ },
+ {
+  "regime_id": 2,
+  "name": "Sharp Aug-Sep season, moderate, stable",
+  "description": "About 59% of the year's hotspots fall in Aug-Sep; typically 21.4 hotspots per 1,000 km² a year; totals vary 68% from year to year and the trend is stable (-12 % per decade).",
+  "timing_coherence": 0.994,
+  "shape12": [
+   0.0068,
+   0.0053,
+   0.0065,
+   0.0081,
+   0.0154,
+   0.031,
+   0.0781,
+   0.2264,
+   0.3596,
+   0.2009,
+   0.0498,
+   0.012
+  ],
+  "n_units": 1092,
+  "example_units": [
+   "83961efffffffff",
+   "839613fffffffff",
+   "839712fffffffff"
+  ],
+  "example_names": [
+   "Northern, Zambia",
+   "Northern, Zambia",
+   "Zambezia, Mozambique"
+  ]
+ },
+ {
+  "regime_id": 3,
+  "name": "Sharp Mar season, moderate, stable",
+  "description": "About 38% of the year's hotspots fall in Mar; typically 13.2 hotspots per 1,000 km² a year; totals vary 50% from year to year and the trend is stable (-2 % per decade).",
+  "timing_coherence": 0.98,
+  "shape12": [
+   0.0755,
+   0.1844,
+   0.3821,
+   0.2256,
+   0.0413,
+   0.0099,
+   0.0069,
+   0.0078,
+   0.0091,
+   0.0117,
+   0.0186,
+   0.0271
+  ],
+  "n_units": 1001,
+  "example_units": [
+   "8354e9fffffffff",
+   "8375b6fffffffff",
+   "834149fffffffff"
+  ],
+  "example_names": [
+   "Northern, Sierra Leone",
+   "Southern, Sierra Leone",
+   "Louangphrabang, Laos"
+  ]
+ },
+ {
+  "regime_id": 4,
+  "name": "Sharp Apr-May season, moderate, falling",
+  "description": "About 79% of the year's hotspots fall in Apr-May; typically 16.5 hotspots per 1,000 km² a year; totals vary 87% from year to year and the trend is falling (-27 % per decade).",
+  "timing_coherence": 0.981,
+  "shape12": [
+   0.0027,
+   0.0048,
+   0.0664,
+   0.4528,
+   0.3347,
+   0.035,
+   0.0215,
+   0.0192,
+   0.0222,
+   0.0304,
+   0.0072,
+   0.0032
+  ],
+  "n_units": 848,
+  "example_units": [
+   "8354eefffffffff",
+   "8354e3fffffffff",
+   "834529fffffffff"
+  ],
+  "example_names": [
+   "Kindia, Guinea",
+   "Télimélé, Guinea",
+   "Campeche, Mexico"
+  ]
+ },
+ {
+  "regime_id": 5,
+  "name": "Sharp Oct-Nov season, moderate, stable",
+  "description": "About 61% of the year's hotspots fall in Oct-Nov; typically 15.0 hotspots per 1,000 km² a year; totals vary 83% from year to year and the trend is stable (+0 % per decade).",
+  "timing_coherence": 0.981,
+  "shape12": [
+   0.0506,
+   0.0213,
+   0.0159,
+   0.0148,
+   0.0136,
+   0.0122,
+   0.0142,
+   0.0301,
+   0.0978,
+   0.322,
+   0.2874,
+   0.1199
+  ],
+  "n_units": 805,
+  "example_units": [
+   "834249fffffffff",
+   "833d16fffffffff",
+   "836a22fffffffff"
+  ],
+  "example_names": [
+   "Punjab, India",
+   "Punjab, India",
+   "Western Bahr el Ghazal, S. Sudan"
+  ]
+ },
+ {
+  "regime_id": 6,
+  "name": "Sharp Jul-Sep season, dense, stable",
+  "description": "About 71% of the year's hotspots fall in Jul-Sep; typically 93.6 hotspots per 1,000 km² a year; totals vary 36% from year to year and the trend is stable (-4 % per decade).",
+  "timing_coherence": 0.955,
+  "shape12": [
+   0.0027,
+   0.0043,
+   0.0092,
+   0.0162,
+   0.042,
+   0.1113,
+   0.2188,
+   0.2936,
+   0.1928,
+   0.0855,
+   0.0193,
+   0.0044
+  ],
+  "n_units": 779,
+  "example_units": [
+   "8383a4fffffffff",
+   "8396eefffffffff",
+   "8396e8fffffffff"
+  ],
+  "example_names": [
+   "Lunda Norte, Angola",
+   "Katanga, Dem. Rep. Congo",
+   "Kasaï-Occidental, Dem. Rep. Congo"
+  ]
+ },
+ {
+  "regime_id": 7,
+  "name": "Sharp Dec-Jan season, dense, stable",
+  "description": "About 60% of the year's hotspots fall in Dec-Jan; typically 84.1 hotspots per 1,000 km² a year; totals vary 35% from year to year and the trend is stable (-12 % per decade).",
+  "timing_coherence": 0.969,
+  "shape12": [
+   0.3302,
+   0.1963,
+   0.0881,
+   0.0195,
+   0.0064,
+   0.0022,
+   0.0014,
+   0.0011,
+   0.0013,
+   0.0096,
+   0.0771,
+   0.2669
+  ],
+  "n_units": 652,
+  "example_units": [
+   "836a0afffffffff",
+   "836a0bfffffffff",
+   "836ae5fffffffff"
+  ],
+  "example_names": [
+   "Western Equatoria, S. Sudan",
+   "Western Equatoria, S. Sudan",
+   "Western Equatoria, S. Sudan"
+  ]
+ },
+ {
+  "regime_id": 8,
+  "name": "Sharp Jul season, sparse, stable",
+  "description": "About 65% of the year's hotspots fall in Jul; typically 8.1 hotspots per 1,000 km² a year; totals vary 225% from year to year and the trend is stable (+0 % per decade).",
+  "timing_coherence": 0.998,
+  "shape12": [
+   0.0002,
+   0.0002,
+   0.0002,
+   0.0003,
+   0.0042,
+   0.1518,
+   0.6462,
+   0.1899,
+   0.0062,
+   0.0004,
+   0.0002,
+   0.0002
+  ],
+  "n_units": 628,
+  "example_units": [
+   "8396cafffffffff",
+   "831543fffffffff",
+   "831544fffffffff"
+  ],
+  "example_names": [
+   "Kasaï-Oriental, Dem. Rep. Congo",
+   "Sakha (Yakutia), Russia",
+   "Sakha (Yakutia), Russia"
+  ]
+ },
+ {
+  "regime_id": 9,
+  "name": "Sharp Aug season, sparse, stable",
+  "description": "About 54% of the year's hotspots fall in Aug; typically 5.8 hotspots per 1,000 km² a year; totals vary 187% from year to year and the trend is stable (+0 % per decade).",
+  "timing_coherence": 0.99,
+  "shape12": [
+   0.0009,
+   0.001,
+   0.0015,
+   0.0032,
+   0.0095,
+   0.0542,
+   0.2911,
+   0.5422,
+   0.0785,
+   0.0136,
+   0.0029,
+   0.0013
+  ],
+  "n_units": 498,
+  "example_units": [
+   "831540fffffffff",
+   "831541fffffffff",
+   "838a12fffffffff"
+  ],
+  "example_names": [
+   "Sakha (Yakutia), Russia",
+   "Sakha (Yakutia), Russia",
+   "Amazonas, Brazil"
+  ]
+ },
+ {
+  "regime_id": 10,
+  "name": "Sharp Jun season, sparse, stable",
+  "description": "About 59% of the year's hotspots fall in Jun; typically 5.6 hotspots per 1,000 km² a year; totals vary 212% from year to year and the trend is stable (+0 % per decade).",
+  "timing_coherence": 0.991,
+  "shape12": [
+   0.0005,
+   0.0005,
+   0.0006,
+   0.0025,
+   0.0388,
+   0.5922,
+   0.2875,
+   0.0641,
+   0.0089,
+   0.0029,
+   0.0008,
+   0.0005
+  ],
+  "n_units": 342,
+  "example_units": [
+   "8396d9fffffffff",
+   "8348c1fffffffff",
+   "8330b2fffffffff"
+  ],
+  "example_names": [
+   "Kasaï-Oriental, Dem. Rep. Congo",
+   "New Mexico, United States of America",
+   "Anhui, China"
+  ]
+ }
+]

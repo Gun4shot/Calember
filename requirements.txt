@@ -1,0 +1,20 @@
+# Python 3.12. API + science package + pipeline (versions the project was built and tested with)
+fastapi==0.115.6
+uvicorn==0.32.1
+pydantic==2.14.3
+polars==2.1.0
+duckdb==2.0.0
+pyarrow==26.0.1
+numpy==2.5.4
+pandas==3.1.1
+h3==4.5.0
+PyYAML==6.0.3
+httpx==0.28.1
+scipy==1.18.1
+scikit-learn==1.9.1
+pytest==9.2.0
+
+# Only for rebuilding the harmonized record (harmonization/) and the static layers (pipeline/)
+lightgbm==4.7.0
+geopandas==1.2.0
+shapely==2.2.0

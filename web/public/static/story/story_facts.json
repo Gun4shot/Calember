@@ -1,0 +1,40 @@
+{
+ "seam_2012": {
+  "raw_sum_pp": 399.5,
+  "harmonized_pp": 4.0,
+  "n_units": 15,
+  "definition": "median |step at 2012-01| of the deseasonalized monthly series, minus MODIS's own step, over 15 regions/biomes"
+ },
+ "h2": {
+  "year": 2019,
+  "n_units": 1242946,
+  "auc_oof": 0.77,
+  "detect_rate_by_npix": {
+   "1": 0.301,
+   "2": 0.46,
+   "3": 0.594,
+   "4": 0.669,
+   "5": 0.724,
+   "6": 0.747,
+   "7": 0.771,
+   "8": 0.788,
+   "9": 0.807,
+   "10": 0.839
+  },
+  "detect_rate_day_night": {
+   "D": 0.424,
+   "N": 0.296
+  }
+ },
+ "drift": {
+  "aqua_2003": "13:30",
+  "aqua_2025": "14:47",
+  "terra_2003": "10:34",
+  "terra_2025": "09:22"
+ },
+ "pixel_area_km2": {
+  "modis_nadir": 1.0,
+  "viirs_nadir": 0.1406
+ },
+ "sources": "data/interim/explore: seam2_CF2_g_z2_summary.json, h2_feas_2019.json, drift.csv"
+}

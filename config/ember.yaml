@@ -1,0 +1,67 @@
+# Ember configuration (CONTRACTS §1). Every module reads parameters from here.
+version: 1
+seed: 2026
+paths:
+  raw: data/raw
+  interim: data/interim
+  products: data/products
+  static_out: web/public/static
+  # API copy of the product, sorted by cell for fast area queries (built by pipeline/build_static.py)
+  api_cell_month: data/products/api/cell_month_by_cell.parquet
+  h3_lookup: data/interim/aux/h3r5_lookup.parquet
+grid:
+  res_globe: 3
+  res_analysis: 5
+  res_firecell: 7
+coverage:
+  # the v0.9.1 product is global (D-012); tiers A/B stay the showcase and training sets
+  tier_a: [NPL, IND, BRA, AUS, CAN]
+  tier_b: [AGO, COD, IDN, RUS, USA, KAZ, MEX]
+  tier_c: true
+cleaning:
+  modis_min_confidence: 30
+  viirs_keep_confidence: [n, h]
+  keep_types: [0]
+  static_mask:
+    years: [2013, 2024]
+    min_month_fraction: 0.5
+    min_distinct_years: 8
+    type12_min_detections: 3
+pass:
+  max_gap_minutes: 10
+pairing:
+  max_dt_minutes: 15
+  cluster_link_m: 750
+  match_radius_m: 1500
+  looking_radius_km: 300
+  years: [2012, 2019]
+regimes:
+  T: ["2000-11", "2002-06"]
+  M: ["2002-07", "2011-12"]
+  B: ["2012-01", "2019-12"]
+  V_start: "2020-01"
+  N_start: "2026-08"          # NOAA-20 near-real-time regime (D-010)
+product:
+  version: "0.9.1-preH0"
+  model: "Bridge v2 (D-015)"
+  latest_complete_month: "2026-10"
+  month_to_date: "2026-11"    # 2026-11 is month-to-date (to 2026-11-12)
+baseline_years: [2003, 2025]
+anomaly:
+  pct_bounds: {much_below: 10, below: 25, above: 75, much_above: 90}
+season:
+  smooth_days: 15
+  onset_frac: 0.10
+  end_frac: 0.90
+  min_hotspots: 20
+twins:
+  unit_res: 3
+  min_hotspots: 200
+  exclude_km: 1000
+  k: 5
+  weights: {shape: 0.5, density: 0.2, concentration: 0.1, variability: 0.1, trend: 0.1}
+api:
+  nrt_cache_minutes: 15
+  max_area_cells_r5: 20000
+  max_csv_rows: 2000000
+  small_area_km2: 2000
