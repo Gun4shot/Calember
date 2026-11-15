@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer, Noise, Vignette } from "@react-three/postprocessing";
 import { NanGuard } from "../app/NanGuard";
 import { useRef, useState } from "react";
-import { audioTick, audioTickU, lensNote, lensWhoosh } from "./audio";
+import { audioTick, audioTickU, lensNote } from "./audio";
 import { DataTower } from "./DataTower";
 import { Evidence } from "./Evidence";
 import { MethodFlow } from "./MethodFlow";
@@ -58,12 +58,8 @@ function AudioDriver({ data }: { data: StoryData }) {
         lensNote(Math.sqrt(reg.raw_sum[mi] / mx), Math.sqrt(reg.harmonized[mi] / mx) * 2.2);
         if (coarse) buzz(4);
       }
-      lensWhoosh(film.lensSpeed, dt);
       lastLens.current = mi;
-    } else {
-      lastLens.current = -1;
-      lensWhoosh(0, dt);
-    }
+    } else lastLens.current = -1;
   });
   return null;
 }

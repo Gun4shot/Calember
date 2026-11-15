@@ -342,8 +342,10 @@ export function Intro({ onDone }: { onDone: () => void }) {
       snd.skip(SKIP_BURN);
     };
     skipRef.current = skip;
-    // any click or key press is the gesture that lets the sound start (a click on the fire never skips it)
-    const wake = () => {
+    // browsers only start audio after a click, tap or key press: the first one anywhere on the page (the fire,
+    // the "Skip intro" button, a key) turns the sound on. The sound button handles its own clicks.
+    const wake = (e?: Event) => {
+      if ((e?.target as HTMLElement | null)?.closest?.(".intro-sound")) return;
       if (!snd.running && !userOff.current) void snd.unlock().then((ok) => ok && setSound("on"));
     };
     const onKey = (e: KeyboardEvent) => {
@@ -351,14 +353,16 @@ export function Intro({ onDone }: { onDone: () => void }) {
       if (e.key === "Escape" || e.key === "Enter" || e.key === " ") skip();
     };
     window.addEventListener("keydown", onKey);
-    cv.addEventListener("pointerdown", wake);
+    window.addEventListener("pointerdown", wake, true);
+    window.addEventListener("touchend", wake, true);
     window.addEventListener("wheel", skip, { passive: true });
     return () => {
       cancelAnimationFrame(raf);
       window.clearTimeout(autoT);
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("wheel", skip);
-      cv.removeEventListener("pointerdown", wake);
+      window.removeEventListener("pointerdown", wake, true);
+      window.removeEventListener("touchend", wake, true);
       snd.dispose();
     };
   }, []);
@@ -384,7 +388,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
             <i />
             <i />
           </span>
-          {sound === "on" ? "Sound on" : "Turn on sound"}
+          {sound === "on" ? "Sound on" : sound === "blocked" ? "Tap for sound" : "Sound off"}
         </button>
         <button type="button" className="intro-skip" onClick={() => skipRef.current()}>
           Skip intro

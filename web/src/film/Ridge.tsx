@@ -66,9 +66,11 @@ function Gridlines({ x0, x1 }: { x0: number; x1: number }) {
     const unitsPerValue = (RIDGE_H * yS) / mx; // world units per hotspot
     const st = niceStep(6.2 / unitsPerValue / 3.2);
     if (Math.abs(st - step) > 1e-6) setStep(st);
+    // during the lens playground the camera frames the ridge higher on screen: keep gridlines below the place header
+    const top = 7.0 - 1.9 * playK(film.t);
     for (let i = 0; i < 4; i++) {
       const y = (i + 1) * (step || st) * unitsPerValue;
-      const show = y < 7.0 ? a : 0;
+      const show = y < top ? a : 0;
       const ln = lines.current[i];
       if (ln) {
         ln.position.y = y;
@@ -82,11 +84,6 @@ function Gridlines({ x0, x1 }: { x0: number; x1: number }) {
       }
     }
     mat.opacity = a * 0.32;
-    const unit = labels.current[4] as (THREE.Object3D & { fillOpacity?: number }) | null;
-    if (unit) {
-      unit.visible = a > 0.01;
-      unit.fillOpacity = a * 0.8;
-    }
   });
   return (
     <group position={[0, 0, -0.45]}>
@@ -105,13 +102,10 @@ function Gridlines({ x0, x1 }: { x0: number; x1: number }) {
             color="#a9b6d0"
             visible={false}
           >
-            {step ? fmtK((i + 1) * step) : ""}
+            {step ? `${fmtK((i + 1) * step)}${i === 0 ? " hotspots / month" : ""}` : ""}
           </Text>
         </group>
       ))}
-      <Text ref={(m: THREE.Object3D | null) => (labels.current[4] = m)} font={monoFont} fontSize={0.2} position={[x0 + 0.5, 6.9, 0]} anchorX="left" anchorY="bottom" color="#7c869c" visible={false}>
-        hotspots / month
-      </Text>
     </group>
   );
 }

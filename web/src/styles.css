@@ -75,6 +75,10 @@ body {
 .wordmark {
   font: 600 1.15rem/1 var(--font-display);
   letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .wordmark::before { width: 20px; height: 20px; margin-right: 7px; vertical-align: -4px; }
 }
 .wordmark::before {
   content: "";
@@ -218,9 +222,11 @@ body {
   text-align: center;
   will-change: opacity, transform;
 }
-.caption-unbroken,
-.caption-play {
+.caption-unbroken {
   margin-bottom: 64px;
+}
+.caption-play {
+  margin-bottom: 92px; /* room for the lens hint between the caption and the region chips */
 }
 .caption-kicker {
   font: 500 0.72rem/1 var(--font-mono);
@@ -488,8 +494,9 @@ body {
 .lens-hint {
   position: absolute;
   left: 50%;
-  top: 58vh;
+  bottom: calc(max(52px, 6vh) + 60px); /* just above the region chips, below the caption */
   transform: translateX(-50%);
+  white-space: nowrap;
   font: 400 0.74rem/1 var(--font-mono);
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -736,7 +743,8 @@ body {
     max-width: none;
   }
   .lens-hint {
-    top: 40vh;
+    bottom: calc(max(52px, 6vh) + 104px); /* above the two rows of region chips */
+    font-size: 0.66rem;
   }
   .caption-play .caption-sub {
     display: none;

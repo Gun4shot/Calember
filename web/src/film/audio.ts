@@ -32,8 +32,6 @@ interface Graph {
   pad: ToneNS.PolySynth;
   bell: ToneNS.PolySynth;
   lens: ToneNS.PolySynth;
-  airGain: ToneNS.Gain;
-  airFilter: ToneNS.Filter;
 }
 let G: Graph | null = null;
 
@@ -57,18 +55,21 @@ export async function initAudio(): Promise<void> {
   void o1;
   void o2;
 
-  // fire: a warm, continuous low "roar" bed (brown noise, lowpassed) …
+  // fire: a low "roar" felt more than heard (brown noise, steep 24 dB/oct lowpass at 120-280 Hz). It sounds only
+  // while fire is on screen. The old bed was always on (a gain floor) and its lowpass opened to 780 Hz at 12 dB/oct, so
+  // its hiss sat in the 300 Hz-4 kHz band where laptop speakers play: measured, it was the loudest layer there in
+  // nearly every section of the film, which is what viewers heard as "static".
   const bedGain = new T_.Gain(0).connect(bus);
-  const bedFilter = new T_.Filter(380, "lowpass").connect(bedGain);
-  new T_.Noise("brown").connect(new T_.Filter(50, "highpass").connect(bedFilter)).start();
-  // … plus soft, rounded pops (pink noise, 4 ms attack, band-passed). Round-robin voices so a
-  // retrigger never cuts a sounding envelope (that cut was the "speaker glitch").
-  const popFilter = new T_.Filter({ frequency: 1400, type: "bandpass", Q: 0.7 }).connect(bus);
+  const bedFilter = new T_.Filter({ frequency: 160, type: "lowpass", rolloff: -24 }).connect(bedGain);
+  new T_.Noise("brown").connect(new T_.Filter(40, "highpass").connect(bedFilter)).start();
+  // … plus sparse, soft "thumps" for big fire (pink noise, 12 ms attack, lowpassed at 600 Hz, so no crackle/hiss).
+  // Round-robin voices so a retrigger never cuts a sounding envelope.
+  const popFilter = new T_.Filter({ frequency: 600, type: "lowpass", rolloff: -24 }).connect(bus);
   const pops = [0, 1, 2, 3].map(() =>
     new T_.NoiseSynth({
       noise: { type: "pink" },
-      envelope: { attack: 0.004, decay: 0.07, sustain: 0, release: 0.05 },
-      volume: -26,
+      envelope: { attack: 0.012, decay: 0.09, sustain: 0, release: 0.08 },
+      volume: -30,
     }).connect(popFilter),
   );
 
@@ -116,15 +117,10 @@ export async function initAudio(): Promise<void> {
     voice: T_.Synth,
     options: { oscillator: { type: "sine" }, envelope: { attack: 0.008, decay: 0.28, sustain: 0, release: 0.25 }, volume: -14 },
   }).connect(new T_.Filter(1600, "lowpass").connect(bus));
-  // lens swipes: a continuous air bed whose gain follows the swipe speed. The old NoiseSynth whoosh restarted
-  // its noise source on every retrigger mid-envelope, which clicked several times a second.
-  const airGain = new T_.Gain(0).connect(bus);
-  const airFilter = new T_.Filter({ frequency: 800, type: "bandpass", Q: 1.1 }).connect(airGain);
-  new T_.Noise("pink").connect(airFilter).start();
-
-  G = { master, droneGain, droneFilter, pops, popFilter, bedGain, bedFilter, modis, viirs, hit, whoosh, whooshFilter, beatA, beatB, beatGain, pad, bell, lens, airGain, airFilter };
+  G = { master, droneGain, droneFilter, pops, popFilter, bedGain, bedFilter, modis, viirs, hit, whoosh, whooshFilter, beatA, beatB, beatGain, pad, bell, lens };
   ready = true;
   setMuted(muted);
+  if (import.meta.env.DEV) Object.assign(window, { __G: G, __Tone: Tone });
 }
 
 export function setMuted(m: boolean) {
@@ -181,18 +177,19 @@ export function audioTick(prevT: number, t: number, dt: number, activity: number
     const a = clamp(activity);
     G.droneGain.gain.rampTo(muted ? 0 : 0.1 + 0.14 * a, 0.25);
     G.droneFilter.frequency.rampTo(200 + 700 * a, 0.25);
-    G.bedGain.gain.rampTo(muted ? 0 : 0.05 + 0.5 * a * a, 0.3);
-    G.bedFilter.frequency.rampTo(260 + 520 * a, 0.3);
-    G.popFilter.frequency.rampTo(1000 + 900 * a, 0.3);
+    // no floor: with no fire on screen the roar is silent
+    const fire = Math.max(0, a - 0.15) / 0.85;
+    G.bedGain.gain.rampTo(muted ? 0 : 0.6 * fire * fire, 0.3);
+    G.bedFilter.frequency.rampTo(120 + 160 * fire, 0.3);
     // the harmonization interval: audible beating that resolves to unison
     const win = ramp(T.harmonize[0] - 0.015, T.harmonize[0] + 0.01, t) * (1 - ramp(T.harmonize[1] + 0.01, T.harmonize[1] + 0.05, t));
     const k = ramp(T.harmonize[0], T.harmonize[1], t);
     G.beatGain.gain.rampTo(muted ? 0 : 0.1 * win, 0.2);
     G.beatB.frequency.rampTo(220 * (1 + 0.045 * (1 - k)), 0.15);
   }
-  // sparse, soft pops scheduled slightly ahead (late events are what click)
-  if (!muted) {
-    popBudget += dt * (0.4 + 7 * activity * activity);
+  // sparse, soft thumps scheduled slightly ahead (late events are what click); only where fire is on screen
+  if (!muted && activity > 0.3) {
+    popBudget += dt * 5 * (activity - 0.3) * (activity - 0.3);
     if (popBudget > 1) {
       popBudget = -Math.random() * 0.5;
       const v = G.pops[popVoice++ % G.pops.length];
@@ -215,21 +212,6 @@ export function lensNote(raw: number, harm: number) {
   G.lens.triggerAttackRelease(note(hs, 3), 0.12, at, 0.3);
 }
 
-/** Lens swept fast: a soft air bed whose level follows the speed (0..1); call every frame (0 when idle). */
-let airClock = 0;
-let airLevel = -1;
-export function lensWhoosh(speed: number, dt: number) {
-  if (!ready || !G || !Tone) return;
-  airClock += dt;
-  if (airClock < 0.1) return; // ~10 control updates a second, like the other continuous parameters
-  airClock = 0;
-  const s = clamp(speed);
-  const level = muted || s < 0.15 ? 0 : 0.05 + 0.1 * s;
-  if (Math.abs(level - airLevel) < 0.004) return;
-  airLevel = level;
-  G.airGain.gain.rampTo(level, 0.25);
-  G.airFilter.frequency.rampTo(600 + 1400 * s, 0.25);
-}
 
 /** Region switch: a short rising arpeggio. */
 export function regionChord() {
