@@ -190,7 +190,7 @@ From the repository root, in order (each script's docstring gives its usage; run
 2. `h3_lookup.py`, `agg2.py`, `static_mask.py`, `agg3.py`, `agg_api.py`
 3. `fill_prep.py` → `build_features.py` → `train_predict.py` → `assemble.py` → `qa_product.py`
 4. Site layers: `pipeline/build_static.py`, `science_exports.py`, `build_aggregates.py`, `build_daily.py`, `build_twins.py`, then the story files (`build_story_*.py`)
-5. Static deployment data: `pipeline/build_snapshot.py`, `build_region_tiles.py`, `build_engine_static.py`, `build_hotspot_parts.py` (then upload `data/hotspots` to the dataset)
+5. Static deployment data: `pipeline/build_snapshot.py`, `build_big_terrain.py`, `build_region_tiles.py`, `build_engine_static.py`, `build_hotspot_parts.py` (then upload `data/hotspots` to the dataset)
 
 Validation: `harmonization/validation/bench9.py` (B2/B3 benchmarks), `crossfit2.py` + `seam2.py`, `c2st_nb.py`, `conformal.py`, `scorecard_oof.py`, `sim_fill.py`.
 

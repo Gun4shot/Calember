@@ -1,6 +1,7 @@
 import type { ApiError, Area, AreaCells, AreaCellsMonth, AreaDaily, AreaPlaces, Rankings, Calendar, Drift, Health, FireRegime, Now, Season, SearchEntry, TuringRound, Twins, ValidationReport } from "./types";
 
 import * as engine from "./engine/region";
+import { withVersion } from "./snapVersion";
 import { drawnSource, runExport, type ExportKind, type ExportOptions, type ExportSource } from "./engine/exports";
 import { STATIC_MODE, SnapMissing, bundle, dailyFrom, nowFrom, snap } from "./snapshot";
 
@@ -32,7 +33,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function staticJson<T>(name: string): Promise<T> {
-  const res = await fetch(`${STATIC}/${name}`);
+  const res = await fetch(withVersion(`${STATIC}/${name}`));
   if (!res.ok) throw new ApiFailure("not_found", `Could not load ${name}.`);
   return (await res.json()) as T;
 }
@@ -153,7 +154,7 @@ export const statics = {
   globeCells: () => staticJson<{ cells: string[]; lat: number[]; lon: number[] }>("globe_cells_r3.json"),
   globeMonths: () => staticJson<{ months: string[] }>("globe_months.json"),
   globeBytes: async () => {
-    const res = await fetch(`${STATIC}/globe_r3_monthly.u8`);
+    const res = await fetch(withVersion(`${STATIC}/globe_r3_monthly.u8`));
     if (!res.ok) throw new ApiFailure("not_found", "Could not load the globe layer.");
     return new Uint8Array(await res.arrayBuffer());
   },

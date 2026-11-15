@@ -278,15 +278,36 @@ function AnswerStrip() {
   );
 }
 
+/** Splits a verdict into its first sentence (the answer) and the rest (supporting detail). */
+function splitLead(text: string): [string, string] {
+  const m = /[.!?]\s+(?=[A-Z0-9(])/.exec(text);
+  return m ? [text.slice(0, m.index + 1), text.slice(m.index + 1).trim()] : [text, ""];
+}
+
 function Head({ k, q, verdict }: { k: string; q: string; verdict: string }) {
+  const [lead, rest] = splitLead(verdict);
+  // long supporting text: the next sentence stays, the remainder is one click away
+  const [sub, extra] = rest.length > 150 ? splitLead(rest) : [rest, ""];
   return (
     <>
       <p className="kicker">{k}</p>
       <h2 id="st-title" className="st-q">
         {q}
       </h2>
-      <Words as="p" text={verdict} className="st-verdict" step={28} />
+      <Words as="p" text={lead} className="st-verdict" step={28} />
+      {rest && <p className="st-sub">{sub}</p>}
+      {extra && <More label="More">{extra}</More>}
     </>
+  );
+}
+
+/** Explanations and fine print, one click away so the panel stays calm. */
+function More({ label = "How to read this", children }: { label?: string; children: React.ReactNode }) {
+  return (
+    <details className="more">
+      <summary>{label}</summary>
+      <div className="more-body">{children}</div>
+    </details>
   );
 }
 
@@ -335,10 +356,13 @@ function VerdictPanel({ cal }: { cal: Calendar }) {
         <span className={`live-pill ${now.source_status}`}>{now.source_status === "ok" ? "live" : now.source_status}</span>
       </p>
       <Gauge value={now.mtd_h_count} expected={now.expected_mtd} lo={now.mtd_lo90} hi={now.mtd_hi90} />
-      <p className="st-note">{now.summary}</p>
-      <p className="fine">
-        Falling sparks on the stage: {fmt(now.last7d?.features?.length ?? 0)} live NOAA-20 / NOAA-21 detections from the last 7 days.
-      </p>
+      <More label="More">
+        <p>{now.summary}</p>
+        <p>
+          Falling sparks on the stage: {fmt(now.last7d?.features?.length ?? 0)} live NOAA-20 / NOAA-21 detections from the last 7 days.
+          {now.source_status !== "ok" ? " The live NASA FIRMS feed is not connected right now, so this uses the stored record only." : ""}
+        </p>
+      </More>
     </div>
   );
   return (
@@ -364,9 +388,10 @@ function VerdictPanel({ cal }: { cal: Calendar }) {
       </div>
       <DailyStrip areaId={useObs.getState().area!.area_id} month={sel.month} />
       <ReadLineup cal={cal} sel={sel} mName={mName} />
-      <p className="st-note">
-        {sel.provisional ? "This month is provisional (near-real-time data). " : ""}
-        {sel.hi90 > sel.lo90 ? `90 % range: ${fmtS(sel.lo90)}–${fmtS(sel.hi90)}. ` : ""}Source: {regimeWords(sel.regime)}.
+      <p className="st-meta">
+        {sel.hi90 > sel.lo90 ? <span>90 % range {fmtS(sel.lo90)}–{fmtS(sel.hi90)}</span> : null}
+        <span>Source: {regimeWords(sel.regime)}</span>
+        {sel.provisional ? <span>provisional (near-real-time data)</span> : null}
       </p>
       <LateBurning cal={cal} />
       <OffSeason cal={cal} sel={sel} />
@@ -392,18 +417,6 @@ function ReadLineup({ cal, sel, mName }: { cal: Calendar; sel: CalendarMonth; mN
   const y = (m: CalendarMonth) => m.month.slice(0, 4);
   return (
     <div className="read-box">
-      <p className="kicker">How to read the 3D view</p>
-      <ul>
-        <li>
-          <i className="rk-pillar" /> Each pillar is <b>{mName} of one year</b> ({y(sorted.reduce((a, b) => (a.month < b.month ? a : b)))}–{y(sorted.reduce((a, b) => (a.month > b.month ? a : b)))}), sorted from quietest (left) to busiest (right). Height = hotspots.
-        </li>
-        <li>
-          <i className={`rk-sel cat-${sel.category ?? "normal"}`} /> The lit pillar with the flag is the month being judged.
-        </li>
-        <li>
-          <i className="rk-band" /> Glass band = the middle half of {cal.baseline[0]}–{cal.baseline[1]}; dashed line = the median.
-        </li>
-      </ul>
       <div className="lu-stats">
         <button type="button" onClick={() => set({ pinned: lo.month })} title="Judge this month">
           <span>quietest</span>
@@ -421,7 +434,20 @@ function ReadLineup({ cal, sel, mName }: { cal: Calendar; sel: CalendarMonth; mN
           <i>{fmtS(hi.h_count)}</i>
         </button>
       </div>
-      <p className="fine">Click any pillar or year label to judge that year, or pick a month on the timeline below.</p>
+      <More label="How to read the 3D view">
+      <ul>
+        <li>
+          <i className="rk-pillar" /> Each pillar is <b>{mName} of one year</b> ({y(sorted.reduce((a, b) => (a.month < b.month ? a : b)))}–{y(sorted.reduce((a, b) => (a.month > b.month ? a : b)))}), sorted from quietest (left) to busiest (right). Height = hotspots.
+        </li>
+        <li>
+          <i className={`rk-sel cat-${sel.category ?? "normal"}`} /> The lit pillar with the flag is the month being judged.
+        </li>
+        <li>
+          <i className="rk-band" /> Glass band = the middle half of {cal.baseline[0]}–{cal.baseline[1]}; dashed line = the median.
+        </li>
+      </ul>
+      <p>Click any pillar or year label to judge that year, or pick a month on the timeline below.</p>
+      </More>
     </div>
   );
 }
@@ -451,11 +477,14 @@ function LateBurning({ cal }: { cal: Calendar }) {
   const modis = recent.reduce((s, m) => s + m.raw.modis, 0);
   if (h < 200 || modis <= 1.15 * h) return null;
   return (
-    <p className="cliff-note">
-      <b>Time-of-day caveat.</b> In the last two years the real MODIS record, whose afternoon pass has drifted about an hour later, saw {fmt(modis)} hotspots here,{" "}
+    <details className="cliff-note note-d">
+      <summary>
+        <b>Time-of-day caveat</b>
+      </summary>
+      In the last two years the real MODIS record, whose afternoon pass has drifted about an hour later, saw {fmt(modis)} hotspots here,{" "}
       {Math.round(100 * (modis / h - 1))} % more than Calember's {fmt(h)}. Burning may have moved later in the day; Calember reproduces the original early-afternoon pass, so recent months
       can read lower than the burning itself.
-    </p>
+    </details>
   );
 }
 
@@ -553,9 +582,6 @@ function TerrainPanel() {
           )}
         </div>
       </div>
-      {mode === "month" && (
-        <p className="fine">Scrub or play the timeline below and the terrain regrows month by month. {colorBy === "anom" ? "Blue: less than this cell's usual for the month · grey: usual · orange to red: more." : ""}</p>
-      )}
       {mode === "month" && colorBy === "anom" && <div className="anom-key" aria-hidden="true" />}
       {mode === "mean" && colorBy === "peak" && (
         <div className="month-wheel" aria-label="Peak month colours">
@@ -621,12 +647,17 @@ function TerrainPanel() {
               average cell.
             </p>
           )}
-          {cells?.adm1 && places.n_places > 1 && <p className="fine">Hover a name to light up its cells on the stage.</p>}
         </div>
       )}
-      <p className="st-note">
-        Each hex is one grid cell of about {cells ? "253" : "12,400"} km², raised by its mean hotspots per year (MODIS-equivalent). Hover a cell for its numbers. Drag to orbit the stage.
-      </p>
+      <More>
+        <p>
+          Each hex is one grid cell of about {cells ? "253" : "12,400"} km², raised by its mean hotspots per year (MODIS-equivalent). Hover a cell for its numbers. Drag to orbit the stage.
+        </p>
+        {mode === "month" && (
+          <p>Scrub or play the timeline below and the terrain regrows month by month. {colorBy === "anom" ? "Blue: less than this cell's usual for the month · grey: usual · orange to red: more." : ""}</p>
+        )}
+        {cells?.adm1 && places && places.n_places > 1 && <p>Hover a name to light up its cells on the stage.</p>}
+      </More>
       <Foot />
     </>
   );
@@ -692,14 +723,22 @@ function CalendarPanel({ cal }: { cal: Calendar }) {
           ))}
         </div>
       )}
-      <p className="st-note">
-        Rows are years (oldest at the back), columns are months; height and colour show hotspots (MODIS-equivalent). The white ridge in front is a typical year (median, middle half
-        shaded); the wall on the right is each year's total. Hover or use the arrow keys; click to pin a month. Hatched blocks are provisional.
-      </p>
+      <More>
+        <p>
+          Rows are years (oldest at the back), columns are months; height and colour show hotspots (MODIS-equivalent). The white ridge in front is a typical year (median, middle half
+          shaded); the wall on the right is each year's total. Hover or use the arrow keys; click to pin a month. Hatched blocks are provisional.
+        </p>
+      </More>
       <Foot>
-        <a className="btn-ghost" href={api.exportUrl(area.area_id, "calendar.csv")} download>
-          ↓ calendar.csv
-        </a>
+        {STATIC_MODE ? (
+          <button type="button" className="btn-ghost" onClick={() => void exportFile(area.area_id, "calendar.csv").catch(() => undefined)}>
+            ↓ calendar.csv
+          </button>
+        ) : (
+          <a className="btn-ghost" href={api.exportUrl(area.area_id, "calendar.csv")} download>
+            ↓ calendar.csv
+          </a>
+        )}
       </Foot>
     </>
   );
@@ -807,11 +846,13 @@ function SeasonPanel() {
           )}
         </tbody>
       </table>
-      <p className="st-note">
+      <More label="How to read the rings">
+      <p>
         Each ring is one fire year ({valid.length} measured, oldest and darkest in the centre, newest and brightest outside), drawn from onset to end with a bead at the peak; thicker rings burned more. The fire year starts in{" "}
         {MONTHS_LONG[season.fire_year_start_month - 1]}, after the quietest month.{season.two_seasons ? ` Two seasons here: ${season.two_seasons.join(" and ")}.` : ""} Orange arcs on the rim are
         significant shifts.
       </p>
+      </More>
       <Foot />
     </>
   );
@@ -928,12 +969,14 @@ function TwinsPanel() {
           Same months
         </button>
       </div>
-      <div className="flower-key">
-        <Flower a={twins.query.shape12} size={46} />
-        <span>
-          This area's season flower: 12 petals, January at the top, petal length = share of the year's fire. Dashed = this area, filled = the twin.
-        </span>
-      </div>
+      <More label="How to read the flowers">
+        <div className="flower-key">
+          <Flower a={twins.query.shape12} size={46} />
+          <span>
+            This area's season flower: 12 petals, January at the top, petal length = share of the year's fire. Dashed = this area, filled = the twin.
+          </span>
+        </div>
+      </More>
       <ol className="twin-list" ref={ref}>
         {twins.twins.map((t, i) => (
           <li key={t.h3_r3} className={focus === i ? "on" : ""} onMouseEnter={() => useObs.setState({ twinFocus: i })}>

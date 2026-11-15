@@ -3,7 +3,8 @@
 // Named places (world, biomes, countries, provinces) answer from files; the day-by-day view, "right now", the Terrain
 // month mode and the downloads are computed here, with the same rules as the API.
 import { latLngToCell } from "h3-js";
-import { pyRound } from "./engine/stats";
+import { fetchRetry, pyRound } from "./engine/stats";
+import { withVersion } from "./snapVersion";
 import { meta as engineMeta } from "./engine/region";
 import type { Area, AreaCells, AreaCellsMonth, AreaDaily, AreaPlaces, Calendar, Category, Health, Now, Rankings, Season, Twins } from "./types";
 
@@ -25,7 +26,7 @@ const cache = new Map<string, Promise<unknown>>();
 function j<T>(path: string): Promise<T> {
   let p = cache.get(path) as Promise<T> | undefined;
   if (!p) {
-    p = fetch(`${SNAP}/${path}`).then((r) => {
+    p = fetchRetry(withVersion(`${SNAP}/${path}`)).then((r) => {
       if (!r.ok) throw new SnapMissing(`${path}: ${r.status}`);
       return r.json() as Promise<T>;
     });

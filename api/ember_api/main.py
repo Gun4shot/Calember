@@ -286,11 +286,17 @@ def cells(area_id: str, first_year: int = 2001, last_year: int = 2025):
     """Additive (APP_V2_PLAN §13): harmonized values per r5 cell inside the area, for the 3D terrain view.
     Columns: cells (hex), lat, lon, mean_annual (MEH/yr over first..last year), peak_month (1-12, null when no fire),
     recent12 (last 12 complete months), years + by_year (per-year totals; only for areas up to 4,000 cells)."""
-    import h3
-    s = get_store(); a = get_area(area_id)
+    a = get_area(area_id)
     cells_int = a.get("_cells_int") or []
     if not cells_int:
         raise AreaError("area_too_large", "This area is too large for a per-cell view; pick a province or draw a smaller area.")
+    return cells_body(area_id, cells_int, first_year, last_year)
+
+
+def cells_body(area_id: str, cells_int: list[int], first_year: int = 2001, last_year: int = 2025) -> dict:
+    """The /cells response for any cell list (also used by pipeline/build_big_terrain.py for countries over the cell limit)."""
+    import h3
+    s = get_store()
     latest = s.cfg["product"]["latest_complete_month"]
     rows = s.area_rows(cells_int, f"{first_year}-01", latest)
     if rows.height == 0:

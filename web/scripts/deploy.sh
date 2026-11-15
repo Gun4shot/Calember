@@ -5,7 +5,7 @@
 # Usage (from the repository root, after `wrangler login`):  bash web/scripts/deploy.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VITE_STATIC=1 pnpm build
+VITE_STATIC=1 VITE_SNAP_V="$(date -u +%Y%m%d%H%M%S)" pnpm build
 rm -rf .deploy
 cp -r dist .deploy
 cp -rl snap .deploy/snap 2>/dev/null || cp -r snap .deploy/snap

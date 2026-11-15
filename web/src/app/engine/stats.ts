@@ -191,3 +191,16 @@ export function kendallP(x: ArrayLike<number>, y: ArrayLike<number>): number {
   const z = conMinusDis / Math.sqrt(v);
   return Math.min(1, 2 * normSf(Math.abs(z)));
 }
+
+/** fetch with two retries on a dropped connection or a 5xx (slow mobile data, a CDN hiccup); a 404 is returned as is */
+export async function fetchRetry(url: string, tries = 3): Promise<Response> {
+  for (let k = 1; ; k++) {
+    try {
+      const r = await fetch(url);
+      if (r.status < 500 || k >= tries) return r;
+    } catch (e) {
+      if (k >= tries) throw e;
+    }
+    await new Promise((ok) => setTimeout(ok, 400 * k));
+  }
+}

@@ -160,7 +160,7 @@ export function Terrain({ fr }: { fr: StageFrame }) {
     let alive = true;
     api.cellsMonth(area.area_id, pinned).then(
       (r) => alive && useObs.setState({ cellsMonth: { month: r.month, values: r.values, typical: r.typical } }),
-      () => undefined,
+      (e) => console.warn("terrain month:", e),
     );
     return () => {
       alive = false;
@@ -178,9 +178,16 @@ export function Terrain({ fr }: { fr: StageFrame }) {
     const val = (c: TCell, i: number) => (monthOn ? cm!.values[i] : yIdx >= 0 && c.byYear ? c.byYear[yIdx] : c.mean);
     // month mode keeps one scale for every month of this area (≈ a busy month in its busiest cell), so scrubbing
     // through an off-season shows a flat floor instead of magnifying noise
-    const max = monthOn
-      ? Math.max(1e-6, 0.6 * Math.max(...tc.list.map((c) => c.mean)), ...cm!.typical)
-      : Math.max(1e-6, ...tc.list.map((c) => (yIdx >= 0 && c.byYear ? Math.max(...c.byYear) : c.mean)));
+    // loops, not Math.max(...list): the largest countries have up to ~65,000 cells (Safari caps call arguments at 65,536)
+    let max = 1e-6;
+    if (monthOn) {
+      let meanMax = 0;
+      for (const c of tc.list) meanMax = Math.max(meanMax, c.mean);
+      max = Math.max(max, 0.6 * meanMax);
+      for (const t of cm!.typical) max = Math.max(max, t);
+    } else {
+      for (const c of tc.list) max = Math.max(max, yIdx >= 0 && c.byYear ? Math.max(...c.byYear) : c.mean);
+    }
     const col = new THREE.Color();
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 6), pos = new THREE.Vector3(), sc = new THREE.Vector3();
     tc.list.forEach((c, i) => {

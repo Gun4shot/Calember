@@ -7,7 +7,8 @@ import { cellArea, cellToChildren, cellToLatLng, cellToParent, gridDisk, latLngT
 import type { Area, AreaCells, AreaCellsMonth, AreaPlaces, Calendar, Season, Twins } from "../types";
 import { fetchCal2, pool } from "./cal2";
 import { calendarResponse, features, monthList, regimeOf, seasonResponse, why, type Bounds, type MonthRow, type SeasonCfg } from "./science";
-import { argmax, pyRound, r } from "./stats";
+import { argmax, fetchRetry, pyRound, r } from "./stats";
+import { withVersion } from "../snapVersion";
 
 export const SNAP = ((import.meta.env.VITE_SNAP_BASE as string | undefined) ?? `${import.meta.env.BASE_URL}snap`).replace(/\/$/, "");
 export class EngineError extends Error {
@@ -34,7 +35,7 @@ const once = new Map<string, Promise<unknown>>();
 function json<T>(path: string): Promise<T> {
   let p = once.get(path) as Promise<T> | undefined;
   if (!p) {
-    p = fetch(`${SNAP}/${path}`).then((res) => {
+    p = fetchRetry(withVersion(`${SNAP}/${path}`)).then((res) => {
       if (!res.ok) throw new EngineError("upstream_unavailable", "Could not load the data files. Check your connection and try again.");
       return res.json() as Promise<T>;
     });
@@ -48,7 +49,7 @@ export const meta = () => json<Meta>("engine/meta.json");
 let landP: Promise<BigUint64Array> | null = null;
 function landCells(): Promise<BigUint64Array> {
   if (!landP) {
-    landP = fetch(`${SNAP}/engine/land.u64.gz`).then(async (res) => {
+    landP = fetchRetry(withVersion(`${SNAP}/engine/land.u64.gz`)).then(async (res) => {
       if (!res.ok) throw new EngineError("upstream_unavailable", "Could not load the data files. Check your connection and try again.");
       let buf = await res.arrayBuffer();
       const b = new Uint8Array(buf);
@@ -164,7 +165,7 @@ const yTiles = new Map<string, Promise<Y | null>>();
 function tile<T>(cache: Map<string, Promise<T | null>>, dir: string, r2: string): Promise<T | null> {
   let p = cache.get(r2);
   if (!p) {
-    p = fetchCal2(`${SNAP}/${dir}/${r2}.bin.gz`) as Promise<T | null>;
+    p = fetchCal2(withVersion(`${SNAP}/${dir}/${r2}.bin.gz`)) as Promise<T | null>;
     p.catch(() => cache.delete(r2));
     cache.set(r2, p);
   }
