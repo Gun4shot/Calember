@@ -104,6 +104,7 @@ export function Overlay({ data }: { data: StoryData }) {
   const lensPunjabRef = useRef<HTMLParagraphElement>(null);
   const chips = useRef<HTMLDivElement>(null);
   const hint = useRef<HTMLDivElement>(null);
+  const scrollCue = useRef<HTMLDivElement>(null);
   const cta = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -229,6 +230,8 @@ export function Overlay({ data }: { data: StoryData }) {
         hud.current.style.opacity = started ? "1" : "0";
       }
       if (rail.current) rail.current.style.transform = `scaleX(${film.s.toFixed(4)})`;
+      // the opening screen (Nov 2000) tells first-time viewers to scroll; it fades as soon as they do
+      if (scrollCue.current) scrollCue.current.style.opacity = (started ? 1 - ramp(0.0015, 0.012, film.s) : 0).toFixed(3);
       if (haze.current) {
         const h = Math.max(ramp(0.258, 0.282, t) * (1 - ramp(0.282, 0.31, t)), ramp(0.93, 0.945, t) * (1 - ramp(0.945, 0.965, t)));
         haze.current.style.opacity = (h * 0.3).toFixed(3);
@@ -474,6 +477,13 @@ export function Overlay({ data }: { data: StoryData }) {
           Recent drops in Punjab are partly because burning moved later in the day, after the satellites pass. Calember keeps the
           original early-afternoon view, so it shows a larger decline than the burning itself.
         </p>
+      </div>
+      <div ref={scrollCue} className="scroll-cue" aria-hidden="true">
+        <span className="sc-mouse">
+          <i />
+        </span>
+        <span className="sc-text">{matchMedia("(pointer: coarse)").matches ? "Swipe up to begin" : "Scroll to begin"}</span>
+        <span className="sc-chev" />
       </div>
       <div ref={hint} className="lens-hint" aria-hidden="true">
         {matchMedia("(pointer: coarse)").matches ? "← drag along the ridge →" : "← move your pointer along the ridge →"}
